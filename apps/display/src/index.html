@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -9,15 +9,15 @@
   <body class="page-loading">
     <div class="page-loading-overlay">
       <span class="loader"></span>
-      <div>LOADING...</div>
+      <div>CONNECTING...</div>
     </div>
     <header>
-      <div class="title">PISTA <span id="courtNumber">1</span></div>
-      <div class="court-status" id="courtStatus">IN GAME</div>
-      <div class="current-time" id="currentTime"></div>
+      <div class="title" id="title"></div>
+      <div class="court-status" id="courtStatus"></div>
+      <div class="current-time" id="currentTime">--:--</div>
     </header>
     <main>
-      <section class="scoreboard">
+      <section class="scoreboard" id="scoreboardSection">
         <div class="team is-loading">
           <div class="team-content">
             <div class="scores">
@@ -35,7 +35,10 @@
               </div>
             </div>
             <div class="players">
-              <div class="player">
+              <div class="player serving" id="player-T1P1">
+                <div class="server-indicator-container">
+                  <div class="server-indicator"></div>
+                </div>
                 <div class="player-name" id="playerName-T1P1">Player 1</div>
               </div>
               <div class="player">
@@ -79,154 +82,26 @@
           </div>
         </div>
       </section>
+      <section class="cointoss" id="cointossSection">
+        <div class="cointoss-result" id="cointossResult">result</div>
+        <img
+          src="https://www.freeiconspng.com/uploads/multimedia-photo-icon-31.png"
+          class="cointoss-img"
+          id="cointossImg"
+        />
+      </section>
+      <section class="session-code active" id="sessionCodeSection">
+        <div class="session-code-title">Scan the QR Code to configure match</div>
+        <img src="http://localhost:3000/api/device/qr" id="sessionCode" />
+      </section>
     </main>
     <footer>
-      <img class="center-logo" src="logo.png" alt="Sport's center logo" />
-      <div class="footer-message" id="footerMessage">Custom message here</div>
-      <img class="product-logo" src="logo.png" alt="Product logo" />
+      <img class="center-logo" src="assets/logo_jg.png" alt="Sport's center logo" />
+      <div class="footer-message" id="footerMessage"></div>
+      <img class="product-logo" src="assets/logo.png" alt="Product logo" />
     </footer>
 
+    <script src="https://cdn.socket.io/4.8.0/socket.io.min.js"></script>
     <script src="script.js"></script>
-    <script>
-      let score = {};
-
-      function renamePlayer(name, team, player) {
-        const playerNameContainer = document.getElementById(
-          `player-${team}-${player}`
-        );
-        playerNameContainer.querySelectorAll("span").forEach((el) => {
-          el.innerHTML = name;
-        });
-      }
-
-      function initScrolling() {
-        document.querySelectorAll(".player-name").forEach((el) => {
-          const container = el.parentElement;
-
-          // Remove scroll class & animation first
-          container.classList.remove("scroll");
-          el.style.animationDuration = "";
-          el.style.animationPlayState = "";
-
-          // Clear previous listener
-          if (el._scrollListener) {
-            el.removeEventListener("animationiteration", el._scrollListener);
-            el._scrollListener = null;
-          }
-
-          // Clear previous timeout
-          if (el._scrollTimeout) {
-            clearTimeout(el._scrollTimeout);
-            el._scrollTimeout = null;
-          }
-
-          // Only scroll if overflowing
-          if (el.scrollWidth > container.clientWidth) {
-            container.classList.add("scroll");
-
-            const speed = 80; // px/s
-            const pause = 5000; // ms
-            const distance = el.scrollWidth / 2;
-            const duration = distance / speed;
-
-            el.style.setProperty("--scroll-distance", `-${distance}px`);
-            el.style.animationDuration = `${duration}s`;
-
-            // Start paused for initial delay
-            el.style.animationPlayState = "paused";
-
-            el._scrollTimeout = setTimeout(() => {
-              el.style.animationPlayState = "running";
-            }, pause);
-
-            // Pause between loops
-            const listener = () => {
-              el.style.animationPlayState = "paused";
-              el._scrollTimeout = setTimeout(() => {
-                el.style.animationPlayState = "running";
-              }, pause);
-            };
-            el.addEventListener("animationiteration", listener);
-            el._scrollListener = listener;
-          }
-        });
-      }
-
-      // Initial run
-      initScrolling();
-
-      window.addEventListener("keydown", (e) => {
-        switch (e.key) {
-          case 1:
-            break;
-          case 2:
-            break;
-        }
-      });
-
-      // Debounced resize
-      let resizeTimeout;
-      window.addEventListener("resize", () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(initScrolling, 200);
-      });
-
-      function updateTime() {
-        const now = new Date();
-
-        // Format as HH:MM (24-hour)
-        const hours = String(now.getHours()).padStart(2, "0");
-        const minutes = String(now.getMinutes()).padStart(2, "0");
-
-        const timeDiv = document.getElementById("currentTime");
-        if (timeDiv) {
-          timeDiv.textContent = `${hours}:${minutes}`;
-        }
-
-        // Calculate ms until next full minute
-        const msToNextMinute =
-          (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
-        setTimeout(updateTime, msToNextMinute);
-      }
-
-      // Start immediately
-      updateTime();
-
-      // Theme toggle handler
-      function toggleTheme() {
-        document.body.classList.toggle("dark-theme");
-      }
-
-      // Loading state handlers
-      function clearPageLoading() {
-        document.body.classList.remove("page-loading");
-      }
-
-      function clearTeamLoading(teamNumber) {
-        const teams = document.querySelectorAll(".team");
-        if (teamNumber >= 1 && teamNumber <= teams.length) {
-          teams[teamNumber - 1].classList.remove("is-loading");
-        }
-      }
-
-      // Keyboard controls
-      window.addEventListener("keydown", (e) => {
-        switch (e.key) {
-          case "t": // Toggle theme
-          case "T":
-            toggleTheme();
-            break;
-          case "1": // Clear page loading
-            clearPageLoading();
-            break;
-          case "2": // Clear team 1 loading
-            clearTeamLoading(1);
-            break;
-          case "3": // Clear team 2 loading
-            clearTeamLoading(2);
-            break;
-        }
-      });
-    </script>
   </body>
 </html>

@@ -20,6 +20,7 @@ interface BaseGameSession {
     startAt?: Date;
     duration?: number;
   };
+  preferredTheme?: 'light' | 'dark';
 }
 
 export interface PadelGameSession extends BaseGameSession {

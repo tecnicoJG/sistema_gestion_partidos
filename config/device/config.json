@@ -1,15 +1,16 @@
 {
-  "deviceId": "",
+  "deviceFamily": "01",
+  "deviceId": "010MKBEDJCEW5",
   "status": "setup",
-  "courtName": "",
   "availableSports": [],
-  "venue": {},
   "network": {
     "mode": "ap",
-    "hostname": "",
-    "ssid": "",
+    "ssid": "CourtController",
     "ip": "192.168.4.1",
     "subnet": "255.255.255.0"
   },
-  "locale": "en"
+  "locale": "en",
+  "theme": {
+    "default": "light"
+  }
 }

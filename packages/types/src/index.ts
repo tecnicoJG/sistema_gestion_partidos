@@ -1,3 +1,3 @@
-export * from './auth';
-export * from './device';
-export * from './game';
+export * from './auth.types';
+export * from './device.types';
+export * from './game.types';

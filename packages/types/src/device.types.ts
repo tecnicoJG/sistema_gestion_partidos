@@ -3,7 +3,6 @@ type Sports = 'padel';
 export type NetworkConfig =
   | {
       mode: 'ap';
-      hostname: string;
       ssid: string;
       ip: string;
       subnet: string;
@@ -34,15 +33,31 @@ export type NetworkConfig =
           };
     };
 
+export interface SMTPConfig {
+  host: string;
+  port: string;
+  secure: boolean;
+  user: string;
+  password: string;
+  fromEmail: string;
+  fromName: string;
+}
+
 export interface DeviceConfiguration {
+  deviceFamily: string; // Base36 2 digit code
   deviceId: string;
   status: 'available' | 'occupied' | 'maintenance' | 'setup';
-  courtName: string;
+  courtName?: string;
   availableSports: Sports[];
-  venue: {
-    name?: string;
+  venue?: {
+    name: string;
     address?: string;
   };
-  network: NetworkConfig;
+  networkConfig: NetworkConfig;
   locale: 'es' | 'en';
+  smtpConfig?: SMTPConfig;
+  theme: {
+    primaryColor?: string;
+    default: 'light' | 'dark';
+  };
 }
