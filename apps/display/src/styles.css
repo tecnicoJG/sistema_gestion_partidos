@@ -1,0 +1,259 @@
+:root {
+  /* Light theme */
+  --color-primary: #1e73be;
+  --color-accent: #fbff00;
+  --color-text-primary: #ebf2f3;
+  --color-text-secondary: #afe9f1;
+  --color-bg-primary: #53ceff;
+  --color-bg-secondary: #00b0e6;
+  --color-bg-tertiary: #00c5e4;
+}
+
+body.dark-theme {
+  /* Dark theme */
+  --color-primary: #1e73be;
+  --color-accent: #fbff00;
+  --color-text-primary: #e0f4ff;
+  --color-text-secondary: #7da5c4;
+  --color-bg-primary: #0a1929;
+  --color-bg-secondary: #162f47;
+  --color-bg-tertiary: #1a4568;
+}
+
+* {
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Arial Black", "Arial", "Helvetica", sans-serif;
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  height: 100vh;
+  display: grid;
+  justify-content: stretch;
+  align-items: stretch;
+  grid-template-columns: 2% 96% 2%;
+  grid-template-rows: 2% 9% 2% 74% 2% 9% 2%;
+  position: relative;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+.page-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-bg-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4vw;
+  font-size: 3vw;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease-out, background-color 300ms ease;
+}
+
+body.page-loading .page-loading-overlay {
+  opacity: 1;
+  pointer-events: all;
+  transition: opacity 250ms ease-in 250ms;
+}
+
+header,
+footer,
+.team,
+.team-content,
+.scores .score-container {
+  padding: 1vw;
+  border-radius: 1vw;
+}
+
+header,
+footer,
+.team {
+  background: var(--color-bg-secondary);
+  transition: background-color 300ms ease;
+}
+
+header {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  container-type: size;
+  gap: 2vw;
+}
+
+header .title,
+header .current-time {
+  flex: 1;
+  font-size: 100cqh;
+}
+
+header .title {
+  text-align: start;
+}
+
+header .current-time {
+  text-align: end;
+}
+
+header .court-status {
+  text-align: center;
+  font-size: 70cqh;
+}
+
+main {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+section.scoreboard {
+  display: flex;
+  gap: 1vw;
+  width: 100%;
+  height: 100%;
+}
+
+.loader {
+  width: 7vw;
+  height: 7vw;
+  border-radius: 50%;
+  display: inline-block;
+  border-top: 0.5vw solid var(--color-text-primary);
+  border-right: 0.5vw solid transparent;
+  box-sizing: border-box;
+  animation: rotation 1s linear infinite;
+  transition: border-color 300ms ease;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.team {
+  position: relative;
+  flex: 1;
+  height: 100%;
+}
+
+.team-content,
+.team-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 70% 30%;
+}
+
+.team.is-loading .team-content {
+  opacity: 0;
+  transition: opacity 250ms ease-out;
+}
+
+.team.is-loading .team-loading {
+  opacity: 1;
+  transition: opacity 250ms ease-in 250ms;
+}
+
+.team-content {
+  opacity: 1;
+  transition: opacity 250ms ease-in 250ms;
+}
+
+.team-loading {
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4vw;
+  transition: opacity 250ms ease-out;
+  font-size: 2vw;
+}
+
+.scores {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  grid-template-columns: 49% 1vw 49%;
+  grid-template-rows: 59% 1vw 39%;
+}
+
+.scores .score-container {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 65% 35%;
+  background: var(--color-bg-tertiary);
+  align-content: center;
+  text-align: center;
+  container-type: size;
+  transition: background-color 300ms ease;
+}
+
+.scores .score-value,
+.scores .score-label {
+  align-content: center;
+  text-align: center;
+}
+
+.scores .score-value {
+  font-size: 60cqh;
+}
+
+.scores .score-label {
+  font-size: 20cqh;
+  color: var(--color-text-secondary);
+  transition: color 300ms ease;
+}
+
+.scores .game-points {
+  grid-column: 1 / 4;
+}
+
+.scores .sets {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.scores .games {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+footer {
+  display: flex;
+  gap: 1vw;
+  align-items: center;
+  padding: 1vw;
+  grid-column: 2;
+  grid-row: 6;
+  container-type: size;
+}
+
+footer img {
+  object-fit: contain;
+  height: 100%;
+}
+
+footer .footer-message {
+  text-align: center;
+  flex: 1;
+  font-size: 60cqh;
+}
