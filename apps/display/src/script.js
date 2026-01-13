@@ -143,9 +143,25 @@ function updateGameState(gameState) {
   if (servingPlayerElement) {
     servingPlayerElement.classList.add('serving');
   }
-
-  clearPageLoading();
 }
+
+// Fetch device config and set title
+async function loadDeviceConfig() {
+  try {
+    const response = await fetch('http://localhost:3000/api/device');
+    const config = await response.json();
+
+    const titleElement = document.getElementById('title');
+    if (titleElement && config.courtName) {
+      titleElement.textContent = config.courtName;
+    }
+  } catch (error) {
+    console.error('Failed to load device config:', error);
+  }
+}
+
+// Load device config on startup
+loadDeviceConfig();
 
 // Connect to Socket.IO server
 const API_URL = 'http://localhost:3000';

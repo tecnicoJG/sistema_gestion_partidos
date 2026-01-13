@@ -74,7 +74,8 @@ footer,
 .team,
 .team-content,
 .scores .score-container,
-main > section:not(.scoreboard) {
+main > section:not(.scoreboard):not(.session-code-ap),
+main .session-code-ap > div {
   padding: 1vw;
   border-radius: 1vw;
 }
@@ -136,7 +137,8 @@ main > section {
     transform 0.3s ease-in-out;
 }
 
-main > section:not(.scoreboard) {
+main > section:not(.scoreboard):not(.session-code-ap),
+main .session-code-ap > div {
   background: var(--color-bg-secondary);
 }
 
@@ -180,15 +182,34 @@ main section.session-code {
   container-type: size;
 }
 
-.session-code .session-code-title {
+.session-code .session-code-title,
+.session-code-ap .code-title {
+  text-align: center;
   grid-row: 2;
   font-size: 7cqh;
 }
 
-.session-code > img {
+.session-code > img,
+.session-code-ap img {
   grid-row: 3;
   height: 65cqh;
   border-radius: 3vw;
+}
+
+main section.session-code-ap {
+  width: 100%;
+  display: flex;
+  gap: 1vw;
+}
+
+main section.session-code-ap > div {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 5% 20% 75%;
+  align-items: center;
+  justify-items: center;
+  container-type: size;
 }
 
 .loader {

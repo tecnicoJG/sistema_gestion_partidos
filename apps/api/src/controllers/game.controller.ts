@@ -4,9 +4,6 @@ import { GameService } from '../services';
 
 export class GameController {
   static getGameState(_req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
     return res.json(GameService.getState());
   }
 
@@ -48,19 +45,11 @@ export class GameController {
   }
 
   static updateGameState(req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
-
     GameService.setState(req.body);
     return res.json(GameService.getState());
   }
 
   static addPoint(req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
-
     const team = parseInt(req.params['team'] || '');
     if (team !== 0 && team !== 1) {
       return res.status(400).json({ error: 'Team must be 0 or 1' });
@@ -71,29 +60,29 @@ export class GameController {
   }
 
   static startMatch(_req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
-
     GameService.startMatch();
     return res.json(GameService.getState());
   }
 
   static changeServer(_req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
-
     GameService.changeServer();
     return res.json(GameService.getState());
   }
 
   static resetMatch(_req: Request, res: Response) {
-    if (!GameService.hasActiveGame()) {
-      return res.status(404).json({ error: 'No active game session' });
-    }
-
     GameService.reset();
     return res.json(GameService.getState());
+  }
+
+  static async getQRCode(_req: Request, res: Response) {
+    try {
+      const qrBuffer = await GameService.generateSessionQR();
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Length', qrBuffer.length);
+      return res.send(qrBuffer);
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to generate QR code' });
+    }
   }
 }

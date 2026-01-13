@@ -41,6 +41,12 @@ export class DeviceService {
         config.deviceId = this.generateDeviceId(config.deviceFamily);
         console.log(`Generated new device ID: ${config.deviceId}`);
 
+        // Auto-configure based on deviceId
+        // Set SSID if in AP mode and not set
+        if (config.networkConfig.mode === 'ap' && !config.networkConfig.ssid) {
+          config.networkConfig.ssid = `CourtController-${config.deviceId}`;
+        }
+
         // Save updated config to file and store in memory
         writeFileSync(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
         this.config = config;
@@ -75,17 +81,34 @@ export class DeviceService {
     writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
   }
 
-  static async generateDeviceQR(): Promise<Buffer> {
+  static async generateAPQR(): Promise<Buffer> {
     if (!this.config) {
       throw new Error('Device not initialized');
     }
 
-    const deviceId = this.config.deviceId;
-    const url = `https://google.com/${deviceId}`;
+    const networkConfig = this.config.networkConfig;
+
+    // Only generate AP QR if in AP mode
+    if (networkConfig.mode !== 'ap') {
+      throw new Error('Device is not in AP mode');
+    }
+
+    const ssid = networkConfig.ssid;
+    const password = networkConfig.password || '';
+    const security = networkConfig.security || 'open';
+
+    // WiFi QR code format: WIFI:T:WPA;S:ssid;P:password;;
+    // T = authentication type (WPA, WEP, or leave empty for open)
+    // S = SSID
+    // P = password (omit for open networks)
+    // H = hidden (true/false)
+    const authType = security === 'open' ? '' : security;
+    const wifiString =
+      security === 'open' ? `WIFI:T:;S:${ssid};;` : `WIFI:T:${authType};S:${ssid};P:${password};;`;
 
     try {
       // Generate QR code as PNG buffer
-      const qrBuffer = await QRCode.toBuffer(url, {
+      const qrBuffer = await QRCode.toBuffer(wifiString, {
         type: 'png',
         width: 300,
         margin: 3,
@@ -97,7 +120,7 @@ export class DeviceService {
 
       return qrBuffer;
     } catch (error) {
-      throw new Error(`Failed to generate QR code: ${error}`);
+      throw new Error(`Failed to generate AP QR code: ${error}`);
     }
   }
 }

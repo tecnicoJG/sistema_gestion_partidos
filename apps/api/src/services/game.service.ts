@@ -1,20 +1,36 @@
-import { PadelGameSession } from '@controller/types';
-
-type SupportedGameSession = PadelGameSession;
+import { GameSession } from '@controller/types';
+import QRCode from 'qrcode';
+import { DeviceService } from './device.service';
 
 export class GameService {
-  private static gameState: SupportedGameSession | null = null;
+  private static gameState: GameSession | null = null;
 
   private constructor() {
     // Private constructor prevents instantiation
   }
 
-  static getState(): SupportedGameSession | null {
+  static initialize(): void {
+    if (!this.gameState) {
+      this.gameState = this.createDefaultSession();
+      console.log('Default game session initialized');
+    }
+  }
+
+  private static createDefaultSession(): GameSession {
+    return {
+      sport: null,
+      sessionToken: Math.random().toString(36).substring(7),
+      sessionConfig: {},
+      status: 'idle',
+    };
+  }
+
+  static getState(): GameSession | null {
     return this.gameState;
   }
 
-  static setState(newState: Partial<SupportedGameSession>): void {
-    if (!this.gameState) {
+  static setState(newState: Partial<GameSession>): void {
+    if (!this.gameState || !this.gameState.sport) {
       throw new Error('No active game session');
     }
 
@@ -24,7 +40,7 @@ export class GameService {
     };
   }
 
-  static createGame(initialState: SupportedGameSession): SupportedGameSession {
+  static createGame(initialState: GameSession): GameSession {
     this.gameState = initialState;
     return this.gameState;
   }
@@ -39,7 +55,7 @@ export class GameService {
 
   // Add a point to a team (sport-specific logic delegation)
   static addPoint(team: 0 | 1): void {
-    if (!this.gameState) {
+    if (!this.gameState || !this.gameState.sport) {
       throw new Error('No active game session');
     }
 
@@ -51,7 +67,8 @@ export class GameService {
   }
 
   private static addPadelPoint(team: 0 | 1): void {
-    if (!this.gameState || this.gameState.sport !== 'padel') return;
+    if (!this.gameState || this.gameState.sport !== 'padel' || this.gameState.status !== 'in_game')
+      return;
 
     const points = this.gameState.matchState.currentGamePoints;
     const otherTeam = team === 0 ? 1 : 0;
@@ -65,11 +82,7 @@ export class GameService {
     }
   }
 
-  private static isPadelGameWon(
-    points: [number, number],
-    team: 0 | 1,
-    otherTeam: 0 | 1
-  ): boolean {
+  private static isPadelGameWon(points: [number, number], team: 0 | 1, otherTeam: 0 | 1): boolean {
     if (!this.gameState || this.gameState.sport !== 'padel') return false;
 
     // Standard scoring: 0, 15, 30, 40, game
@@ -93,7 +106,8 @@ export class GameService {
   }
 
   private static winPadelGame(team: 0 | 1): void {
-    if (!this.gameState || this.gameState.sport !== 'padel') return;
+    if (!this.gameState || this.gameState.sport !== 'padel' || this.gameState.status !== 'in_game')
+      return;
 
     // Reset game points
     this.gameState.matchState.currentGamePoints = [0, 0];
@@ -132,7 +146,8 @@ export class GameService {
   }
 
   private static winPadelSet(team: 0 | 1): void {
-    if (!this.gameState || this.gameState.sport !== 'padel') return;
+    if (!this.gameState || this.gameState.sport !== 'padel' || this.gameState.status !== 'in_game')
+      return;
 
     // Save current set scores
     const setScore: [number, number] = [...this.gameState.matchState.currentSetGames];
@@ -153,7 +168,7 @@ export class GameService {
 
   // Change server (sport-agnostic but implementation may vary)
   static changeServer(): void {
-    if (!this.gameState) {
+    if (!this.gameState || this.gameState.status !== 'in_game') {
       throw new Error('No active game session');
     }
 
@@ -164,7 +179,8 @@ export class GameService {
   }
 
   private static changePadelServer(): void {
-    if (!this.gameState || this.gameState.sport !== 'padel') return;
+    if (!this.gameState || this.gameState.sport !== 'padel' || this.gameState.status !== 'in_game')
+      return;
 
     const currentPlayer = this.gameState.matchState.servingPlayer;
     const currentTeam = this.gameState.matchState.servingTeam;
@@ -189,7 +205,7 @@ export class GameService {
 
   // Start the match
   static startMatch(): void {
-    if (!this.gameState) {
+    if (!this.gameState || !this.gameState.sport) {
       throw new Error('No active game session');
     }
 
@@ -215,5 +231,34 @@ export class GameService {
       this.gameState.status = 'idle';
     }
     // Future sports can be added here
+  }
+
+  // Generate session QR code
+  static async generateSessionQR(): Promise<Buffer> {
+    if (!this.gameState) {
+      throw new Error('No active game session');
+    }
+
+    const deviceConfig = DeviceService.getConfig();
+    const deviceId = deviceConfig.deviceId;
+    const sessionToken = this.gameState.sessionToken;
+    const url = `https://google.com/${deviceId}/${sessionToken}`;
+
+    try {
+      // Generate QR code as PNG buffer
+      const qrBuffer = await QRCode.toBuffer(url, {
+        type: 'png',
+        width: 300,
+        margin: 3,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+
+      return qrBuffer;
+    } catch (error) {
+      throw new Error(`Failed to generate QR code: ${error}`);
+    }
   }
 }

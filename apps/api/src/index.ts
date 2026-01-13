@@ -1,11 +1,12 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import { createServer } from 'http';
+import { resolve } from 'path';
 import { Server } from 'socket.io';
-import dotenv from 'dotenv';
-import { GameService, DeviceService } from './services';
 import { createBroadcastMiddleware } from './middleware/broadcast';
-import gameRoutes from './routes/game.routes';
 import deviceRoutes from './routes/device.routes';
+import gameRoutes from './routes/game.routes';
+import { DeviceService, GameService } from './services';
 
 dotenv.config();
 
@@ -18,7 +19,9 @@ const io = new Server(httpServer, {
 });
 
 app.use(express.json());
-app.use(express.static('public'));
+
+// Serve display app
+app.use(express.static(resolve(__dirname, '../../display/src')));
 
 const PORT = process.env['PORT'] || 3000;
 

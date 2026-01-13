@@ -24,4 +24,7 @@ router.post('/change-server', GameController.changeServer);
 // Reset match
 router.post('/reset', GameController.resetMatch);
 
+// Session QR Code
+router.get('/qr', GameController.getQRCode);
+
 export default router;

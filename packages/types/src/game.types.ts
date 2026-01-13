@@ -14,8 +14,12 @@ interface GuestPlayer extends BasePlayer {
 
 type Player = AccountPlayer | GuestPlayer;
 
+type Sports = 'padel';
+
 interface BaseGameSession {
+  sport: Sports | null;
   sessionToken: string;
+  status: 'idle' | 'pending_start' | 'in_game' | 'finished';
   sessionConfig: {
     startAt?: Date;
     duration?: number;
@@ -23,9 +27,12 @@ interface BaseGameSession {
   preferredTheme?: 'light' | 'dark';
 }
 
+interface UncofiguredGameSession extends BaseGameSession {
+  sport: null;
+}
+
 export interface PadelGameSession extends BaseGameSession {
   sport: 'padel';
-  status: 'idle' | 'pending_start' | 'in_game' | 'finished';
   matchState: {
     sets: [number, number][];
     currentSetGames: [number, number];
@@ -43,4 +50,4 @@ export interface PadelGameSession extends BaseGameSession {
   };
 }
 
-export type GameSession = PadelGameSession;
+export type GameSession = PadelGameSession | UncofiguredGameSession;

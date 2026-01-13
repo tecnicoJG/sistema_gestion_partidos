@@ -1,11 +1,12 @@
 {
   "deviceFamily": "01",
-  "deviceId": "010MKBEDJCEW5",
+  "deviceId": "010MKCEADZ6Y3",
   "status": "setup",
   "availableSports": [],
-  "network": {
+  "networkConfig": {
     "mode": "ap",
-    "ssid": "CourtController",
+    "ssid": "CourtController-010MKCEADZ6Y3",
+    "security": "open",
     "ip": "192.168.4.1",
     "subnet": "255.255.255.0"
   },

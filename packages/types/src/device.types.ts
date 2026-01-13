@@ -4,6 +4,8 @@ export type NetworkConfig =
   | {
       mode: 'ap';
       ssid: string;
+      password?: string;
+      security: 'WPA2' | 'open';
       ip: string;
       subnet: string;
     }
@@ -46,7 +48,7 @@ export interface SMTPConfig {
 export interface DeviceConfiguration {
   deviceFamily: string; // Base36 2 digit code
   deviceId: string;
-  status: 'available' | 'occupied' | 'maintenance' | 'setup';
+  status: 'available' | 'occupied' | 'maintenance' | 'setup' | 'warning' | 'error';
   courtName?: string;
   availableSports: Sports[];
   venue?: {
@@ -59,5 +61,9 @@ export interface DeviceConfiguration {
   theme: {
     primaryColor?: string;
     default: 'light' | 'dark';
+  };
+  credentials?: {
+    adminPIN: string;
+    staffPIN?: string;
   };
 }
