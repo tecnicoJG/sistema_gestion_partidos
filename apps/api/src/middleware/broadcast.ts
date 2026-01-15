@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { Server } from 'socket.io';
 import { GameService } from '../services';
 
@@ -18,7 +18,7 @@ export function createBroadcastMiddleware(io: Server) {
         req.method === 'PUT' ||
         req.method === 'DELETE'
       ) {
-        const currentState = GameService.getState();
+        const currentState = GameService.getSession();
         if (currentState) {
           io.emit('gameState', currentState);
         }

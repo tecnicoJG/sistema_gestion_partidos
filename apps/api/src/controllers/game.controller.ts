@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
 import { PadelGameSession } from '@controller/types';
+import { Request, Response } from 'express';
 import { GameService } from '../services';
 
 export class GameController {
   static getGameState(_req: Request, res: Response) {
-    return res.json(GameService.getState());
+    return res.json(GameService.getSession());
   }
 
   static createGame(req: Request, res: Response) {
@@ -40,13 +40,13 @@ export class GameController {
       ...req.body,
     };
 
-    const createdGame = GameService.createGame(newGame);
+    const createdGame = GameService.createSession(newGame);
     return res.status(201).json(createdGame);
   }
 
   static updateGameState(req: Request, res: Response) {
-    GameService.setState(req.body);
-    return res.json(GameService.getState());
+    GameService.updateSession(req.body);
+    return res.json(GameService.getSession());
   }
 
   static addPoint(req: Request, res: Response) {
@@ -56,22 +56,22 @@ export class GameController {
     }
 
     GameService.addPoint(team as 0 | 1);
-    return res.json(GameService.getState());
+    return res.json(GameService.getSession());
   }
 
   static startMatch(_req: Request, res: Response) {
     GameService.startMatch();
-    return res.json(GameService.getState());
+    return res.json(GameService.getSession());
   }
 
   static changeServer(_req: Request, res: Response) {
     GameService.changeServer();
-    return res.json(GameService.getState());
+    return res.json(GameService.getSession());
   }
 
   static resetMatch(_req: Request, res: Response) {
     GameService.reset();
-    return res.json(GameService.getState());
+    return res.json(GameService.getSession());
   }
 
   static async getQRCode(_req: Request, res: Response) {

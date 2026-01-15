@@ -30,7 +30,7 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   // Send current game state on connection
-  const currentState = GameService.getState();
+  const currentState = GameService.getSession();
   if (currentState) {
     socket.emit('gameState', currentState);
   }

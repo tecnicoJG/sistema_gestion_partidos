@@ -1,6 +1,6 @@
+import { spawn } from 'child_process';
 import { Request, Response } from 'express';
 import { DeviceService } from '../services';
-import { spawn } from 'child_process';
 
 export class DeviceController {
   static getConfig(_req: Request, res: Response) {
@@ -14,7 +14,7 @@ export class DeviceController {
 
   static async getAPQRCode(_req: Request, res: Response) {
     try {
-      const qrBuffer = await DeviceService.generateAPQR();
+      const qrBuffer = await DeviceService.generateNetworkQR();
 
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Content-Length', qrBuffer.length);

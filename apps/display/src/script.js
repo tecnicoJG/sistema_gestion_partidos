@@ -148,7 +148,7 @@ function updateGameState(gameState) {
 // Fetch device config and set title
 async function loadDeviceConfig() {
   try {
-    const response = await fetch('http://localhost:3000/api/device');
+    const response = await fetch('/api/device');
     const config = await response.json();
 
     const titleElement = document.getElementById('title');
@@ -164,8 +164,8 @@ async function loadDeviceConfig() {
 loadDeviceConfig();
 
 // Connect to Socket.IO server
-const API_URL = 'http://localhost:3000';
-const socket = io(API_URL);
+// Use relative URL to connect to same host/port as the page
+const socket = io();
 
 socket.on('connect', () => {
   console.log('Connected to server');

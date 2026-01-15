@@ -1,4 +1,4 @@
-import { DeviceConfiguration } from '@controller/types';
+import { DeviceConfiguration, WiFiConfig } from '@controller/types';
 import { randomBytes } from 'crypto';
 import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -35,7 +35,6 @@ export class DeviceService {
       // Check if device ID exists and is valid
       if (config.deviceId && config.deviceId.trim() !== '') {
         this.config = config;
-        console.log(`Device ID loaded from config: ${config.deviceId}`);
       } else {
         // Generate a new short ID for this device using the device family from config
         config.deviceId = this.generateDeviceId(config.deviceFamily);
@@ -50,7 +49,7 @@ export class DeviceService {
         // Save updated config to file and store in memory
         writeFileSync(this.configPath, JSON.stringify(config, null, 2), 'utf-8');
         this.config = config;
-        console.log(`Device ID saved to config file`);
+        console.log(`Device Config saved to file`);
       }
     } catch (error) {
       throw new Error(`Failed to initialize device: ${error}`);
@@ -81,30 +80,54 @@ export class DeviceService {
     writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
   }
 
-  static async generateAPQR(): Promise<Buffer> {
+  static async generateNetworkQR(): Promise<Buffer> {
     if (!this.config) {
       throw new Error('Device not initialized');
     }
 
     const networkConfig = this.config.networkConfig;
+    let wifiConfig: WiFiConfig;
 
-    // Only generate AP QR if in AP mode
-    if (networkConfig.mode !== 'ap') {
-      throw new Error('Device is not in AP mode');
+    if (networkConfig.mode === 'ap') {
+      // AP mode: use AP network config
+      wifiConfig = {
+        ssid: networkConfig.ssid,
+        password: networkConfig.password,
+        security: networkConfig.security,
+      };
+    } else {
+      // Client mode: prioritize guestNetwork, fallback to networkConfig
+      if (this.config.guestNetwork) {
+        // Use guest network if available
+        wifiConfig = this.config.guestNetwork;
+      } else if (networkConfig.connection.type === 'wifi') {
+        // Fallback to main network config if WiFi
+        wifiConfig = {
+          ssid: networkConfig.connection.ssid,
+          password: networkConfig.connection.password,
+          security: networkConfig.connection.security,
+        };
+      } else {
+        // Ethernet connection - cannot generate WiFi QR
+        throw new Error('Cannot generate WiFi QR code for Ethernet connection without guest network');
+      }
     }
 
-    const ssid = networkConfig.ssid;
-    const password = networkConfig.password || '';
-    const security = networkConfig.security || 'open';
+    // Validate password for secured networks
+    if (wifiConfig.security !== 'open' && !wifiConfig.password) {
+      throw new Error('Missing password for secured network');
+    }
 
     // WiFi QR code format: WIFI:T:WPA;S:ssid;P:password;;
     // T = authentication type (WPA, WEP, or leave empty for open)
     // S = SSID
     // P = password (omit for open networks)
     // H = hidden (true/false)
-    const authType = security === 'open' ? '' : security;
+    const authType = wifiConfig.security === 'open' ? '' : wifiConfig.security;
     const wifiString =
-      security === 'open' ? `WIFI:T:;S:${ssid};;` : `WIFI:T:${authType};S:${ssid};P:${password};;`;
+      wifiConfig.security === 'open'
+        ? `WIFI:T:;S:${wifiConfig.ssid};;`
+        : `WIFI:T:${authType};S:${wifiConfig.ssid};P:${wifiConfig.password};;`;
 
     try {
       // Generate QR code as PNG buffer
@@ -120,7 +143,7 @@ export class DeviceService {
 
       return qrBuffer;
     } catch (error) {
-      throw new Error(`Failed to generate AP QR code: ${error}`);
+      throw new Error(`Failed to generate network QR code: ${error}`);
     }
   }
 }

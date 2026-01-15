@@ -18,9 +18,9 @@ type Sports = 'padel';
 
 interface BaseGameSession {
   sport: Sports | null;
-  sessionToken: string;
+  token: string;
   status: 'idle' | 'pending_start' | 'in_game' | 'finished';
-  sessionConfig: {
+  config: {
     startAt?: Date;
     duration?: number;
   };

@@ -1,14 +1,17 @@
 type Sports = 'padel';
 
+export interface WiFiConfig {
+  ssid: string;
+  password?: string;
+  security: 'WPA2' | 'WPA3' | 'open';
+}
+
 export type NetworkConfig =
-  | {
+  | ({
       mode: 'ap';
-      ssid: string;
-      password?: string;
-      security: 'WPA2' | 'open';
       ip: string;
       subnet: string;
-    }
+    } & WiFiConfig)
   | {
       mode: 'client';
       hostname: string;
@@ -27,12 +30,9 @@ export type NetworkConfig =
         | {
             type: 'ethernet';
           }
-        | {
+        | ({
             type: 'wifi';
-            ssid: string;
-            password?: string;
-            security: 'WPA2' | 'WPA3' | 'open';
-          };
+          } & WiFiConfig);
     };
 
 export interface SMTPConfig {
@@ -56,6 +56,7 @@ export interface DeviceConfiguration {
     address?: string;
   };
   networkConfig: NetworkConfig;
+  guestNetwork?: WiFiConfig;
   locale: 'es' | 'en';
   smtpConfig?: SMTPConfig;
   theme: {
