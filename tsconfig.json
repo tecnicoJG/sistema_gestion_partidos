@@ -8,6 +8,14 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* Emit */
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "removeComments": true,
 
     /* Interop Constraints */
     "esModuleInterop": true,
@@ -27,13 +35,15 @@
     "exactOptionalPropertyTypes": false,
 
     /* Completeness */
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    /* Path Mapping */
+    "baseUrl": "./src",
+    "paths": {
+      "~/lib/*": ["./lib/*"],
+      "~/services/*": ["./services/*"]
+    }
   },
-  "files": [],
-  "references": [
-    { "path": "./apps/api" },
-    { "path": "./packages/types" },
-    { "path": "./packages/constants" },
-    { "path": "./packages/validation" }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "build", "apps", "packages"]
 }

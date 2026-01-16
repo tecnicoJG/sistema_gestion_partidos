@@ -24,13 +24,35 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Get version from package.json
         id: package_version
         run: |
           echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
           echo "minimumVersionRequired=$(node -p "require('./package.json').minimumVersionRequired || ''")" >> $GITHUB_OUTPUT
+
+      - name: Build project
+        run: npm run build
+
+      - name: Create release archive
+        run: |
+          # Create a clean copy for release (only production files)
+          mkdir -p release-temp
+
+          # Copy built files
+          cp -r dist release-temp/
+
+          # Copy runtime files
+          cp package.json package-lock.json release-temp/
+
+          # Create zip with repo name + build + version
+          cd release-temp
+          zip -r ../${{ github.event.repository.name }}-build-${{ steps.package_version.outputs.version }}.zip .
+          cd ..
+
+          # Cleanup
+          rm -rf release-temp
 
       - name: Check if release already exists
         id: check_release
@@ -72,15 +94,13 @@ jobs:
 
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'
-        uses: actions/create-release@v1
+        run: |
+          gh release create "v${{ steps.package_version.outputs.version }}" \
+            --title "Release Version ${{ steps.package_version.outputs.version }}" \
+            --notes "${{ steps.release_body.outputs.body }}" \
+            ${{ github.event.repository.name }}-build-${{ steps.package_version.outputs.version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.package_version.outputs.version }}
-          release_name: Release v${{ steps.package_version.outputs.version }}
-          body: ${{ steps.release_body.outputs.body }}
-          draft: false
-          prerelease: false
 
       - name: Release already exists
         if: steps.check_release.outputs.exists == 'true'

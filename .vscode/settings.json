@@ -16,10 +16,10 @@
   "files.insertFinalNewline": true,
   "files.exclude": {
     "**/node_modules": false,
-    "**/dist": true,
-    "**/build": true,
-    "**/.turbo": true,
-    "**/.next": true
+    "**/dist": false,
+    "**/build": false,
+    "**/.turbo": false,
+    "**/.next": false
   },
 
   // TypeScript
