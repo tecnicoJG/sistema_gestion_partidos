@@ -152,9 +152,24 @@ class Updater {
       const targetRelease = upgradePathResult.release;
       const targetVersion = upgradePathResult.targetVersion;
 
-      // Download the target version (not necessarily the latest)
-      this._downloadSourceCode(
-        targetRelease.zipball_url,
+      // Find build asset
+      const buildAssetName = `${this.config.repo}-build-${targetVersion}.zip`;
+      const buildAsset = targetRelease.assets?.find(asset => asset.name === buildAssetName);
+
+      if (!buildAsset) {
+        this._setState("idle");
+        callback(
+          new Error(
+            `Build asset not found for version ${targetVersion}. Expected: ${buildAssetName}`
+          ),
+          null
+        );
+        return;
+      }
+
+      // Download the build artifact
+      this._downloadRelease(
+        buildAsset.browser_download_url,
         targetRelease.tag_name,
         targetVersion,
         (downloadError, result) => {
@@ -700,8 +715,8 @@ class Updater {
     });
   }
 
-  _downloadSourceCode(zipballUrl, tagName, version, callback) {
-    const fileName = `${this.config.repo}-${tagName}.zip`;
+  _downloadRelease(assetUrl, tagName, version, callback) {
+    const fileName = `${this.config.repo}-build-${version}.zip`;
     const filePath = path.join(this.downloadsDir, fileName);
 
     // Create downloads directory
@@ -728,6 +743,7 @@ class Updater {
     const downloadOptions = {
       headers: {
         "User-Agent": "GH-Updater",
+        "Accept": "application/octet-stream",
       },
     };
 
@@ -735,7 +751,7 @@ class Updater {
       downloadOptions.headers.Authorization = `token ${this.config.token}`;
     }
 
-    const downloadReq = https.get(zipballUrl, downloadOptions, (res) => {
+    const downloadReq = https.get(assetUrl, downloadOptions, (res) => {
       // Handle redirects
       if (res.statusCode === 302 || res.statusCode === 301) {
         const redirectUrl = res.headers.location;
@@ -863,27 +879,10 @@ class Updater {
       const newVersionZip = new AdmZip(newVersionZipPath);
       newVersionZip.extractAllTo(extractDir, true);
 
-      // Find extracted folder
-      const extractedContents = fs.readdirSync(extractDir);
-      const extractedFolder = extractedContents.find((item) => {
-        const itemPath = path.join(extractDir, item);
-        const stats = fs.statSync(itemPath);
-        // Validate folder name to prevent path traversal
-        if (item.includes("..") || path.isAbsolute(item)) {
-          throw new Error("Invalid folder name in archive: potential path traversal detected");
-        }
-        return stats.isDirectory();
-      });
-
-      if (!extractedFolder) {
-        throw new Error("Could not find extracted folder in archive");
-      }
-
-      const extractedPath = path.join(extractDir, extractedFolder);
-
+      // Build artifact has files at root (no wrapper folder)
       // Step 1: Sanity check - verify minimum version requirement from new version's package.json
       console.log("Verifying compatibility with new version...");
-      const newPackageJsonPath = path.join(extractedPath, "package.json");
+      const newPackageJsonPath = path.join(extractDir, "package.json");
       if (fs.existsSync(newPackageJsonPath)) {
         try {
           const newPackageJson = JSON.parse(fs.readFileSync(newPackageJsonPath, "utf8"));
@@ -997,10 +996,10 @@ class Updater {
 
       // Step 5: Copy new version files
       console.log("Installing new version files...");
-      const filesToCopy = fs.readdirSync(extractedPath);
+      const filesToCopy = fs.readdirSync(extractDir);
 
       filesToCopy.forEach((file) => {
-        const srcPath = path.join(extractedPath, file);
+        const srcPath = path.join(extractDir, file);
         const destPath = path.join(process.cwd(), file);
 
         try {

@@ -1,0 +1,1 @@
+- [ ] include version in app data + varify compatibility

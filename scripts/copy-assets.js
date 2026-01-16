@@ -25,4 +25,15 @@ if (!existsSync(updaterDest)) {
 copyFileSync(updaterSrc, join(updaterDest, 'Updater.js'));
 console.log('✓ Copied updater');
 
+// Copy default config files
+const defaultsSrc = 'src/lib/defaults';
+const defaultsDest = 'dist/lib/defaults';
+
+if (!existsSync(defaultsDest)) {
+  mkdirSync(defaultsDest, { recursive: true });
+}
+
+cpSync(defaultsSrc, defaultsDest, { recursive: true });
+console.log('✓ Copied default configs');
+
 console.log('\n✅ Asset copy complete!');
