@@ -1,18 +1,18 @@
-import { DeviceConfiguration, WiFiConfig } from '../../../lib/types/index.js';
-import { deviceConfigurationSchema } from '../../../lib/schemas/index.js';
 import { randomBytes } from 'crypto';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
-import QRCode from 'qrcode';
 import ini from 'ini';
+import { dirname, resolve } from 'path';
+import QRCode from 'qrcode';
+import { fileURLToPath } from 'url';
+import { deviceConfigurationSchema } from '~/lib/schemas/index.js';
+import { DeviceConfiguration, WiFiConfig } from '~/lib/types/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class DeviceService {
-  private static configPath: string = resolve(__dirname, '../../../../.app_data/device.config');
-  private static defaultConfigPath: string = resolve(__dirname, '../../../lib/defaults/device.config');
+  private static configPath: string = resolve(__dirname, '../../../.app_data/device.config');
+  private static defaultConfigPath: string = resolve(__dirname, '../../lib/defaults/device.config');
 
   private static config: DeviceConfiguration | null = null;
 
@@ -38,7 +38,12 @@ export class DeviceService {
       status: parsed['device']?.['status'] || 'setup',
       locale: parsed['device']?.['locale'] || 'en',
       courtName: parsed['device']?.['courtName'],
-      availableSports: parsed['sports']?.['available'] ? parsed['sports']['available'].split(',').map((s: string) => s.trim()).filter(Boolean) : [],
+      availableSports: parsed['sports']?.['available']
+        ? parsed['sports']['available']
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [],
       theme: {
         default: parsed['theme']?.['default'] || 'light',
         primaryColor: parsed['theme']?.['primaryColor'],
@@ -69,23 +74,25 @@ export class DeviceService {
       config.networkConfig = {
         mode: 'client',
         hostname: parsed['network']['hostname'] || '',
-        ipConfig: parsed['network']['ipConfigType'] === 'static'
-          ? {
-              type: 'static',
-              ip: parsed['network']['ip'] || '',
-              subnet: parsed['network']['subnet'] || '',
-              gateway: parsed['network']['gateway'] || '',
-              dns: [parsed['network']['dns1'] || '', parsed['network']['dns2'] || ''],
-            }
-          : { type: 'dhcp' },
-        connection: connectionType === 'ethernet'
-          ? { type: 'ethernet' }
-          : {
-              type: 'wifi',
-              ssid: parsed['network']['ssid'] || '',
-              password: parsed['network']['password'],
-              security: parsed['network']['security'] || 'open',
-            },
+        ipConfig:
+          parsed['network']['ipConfigType'] === 'static'
+            ? {
+                type: 'static',
+                ip: parsed['network']['ip'] || '',
+                subnet: parsed['network']['subnet'] || '',
+                gateway: parsed['network']['gateway'] || '',
+                dns: [parsed['network']['dns1'] || '', parsed['network']['dns2'] || ''],
+              }
+            : { type: 'dhcp' },
+        connection:
+          connectionType === 'ethernet'
+            ? { type: 'ethernet' }
+            : {
+                type: 'wifi',
+                ssid: parsed['network']['ssid'] || '',
+                password: parsed['network']['password'],
+                security: parsed['network']['security'] || 'open',
+              },
       };
     }
 
@@ -360,7 +367,9 @@ export class DeviceService {
         };
       } else {
         // Ethernet connection - cannot generate WiFi QR
-        throw new Error('Cannot generate WiFi QR code for Ethernet connection without guest network');
+        throw new Error(
+          'Cannot generate WiFi QR code for Ethernet connection without guest network'
+        );
       }
     }
 

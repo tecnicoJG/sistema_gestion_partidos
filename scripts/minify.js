@@ -53,11 +53,13 @@ async function minifyDirectory(dir) {
 
 console.log('🔧 Minifying JavaScript files...\n');
 
-// Minify compiled API code
-await minifyDirectory('dist/services/api');
-await minifyDirectory('dist/lib');
+// Minify entry point
+await minifyDirectory('dist');
 
-// Minify display static files
-await minifyDirectory('dist/services/display');
+// Minify all modules (server, device, game, updater, display)
+await minifyDirectory('dist/modules');
+
+// Minify lib
+await minifyDirectory('dist/lib');
 
 console.log('\n✅ Minification complete!');

@@ -1,6 +1,6 @@
-import { GameSession } from '../../../lib/types/index.js';
+import { GameSession } from '~/lib/types/index.js';
 import QRCode from 'qrcode';
-import { DeviceService } from './device.service.js';
+import { DeviceService } from '~/modules/device/index.js';
 
 export class GameService {
   private static session: GameSession | null = null;

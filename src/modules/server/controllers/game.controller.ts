@@ -1,6 +1,6 @@
-import { PadelGameSession } from '../../../lib/types/index.js';
 import { Request, Response } from 'express';
-import { GameService } from '../services/index.js';
+import { PadelGameSession } from '~/lib/types/index.js';
+import { GameService } from '~/modules/game/index.js';
 
 export class GameController {
   static getGameState(_req: Request, res: Response) {

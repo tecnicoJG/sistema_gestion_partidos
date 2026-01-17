@@ -41,6 +41,7 @@ pids/
 *.pid
 *.seed
 *.pid.lock
+.app_data/
 
 # Cache directories
 .cache/

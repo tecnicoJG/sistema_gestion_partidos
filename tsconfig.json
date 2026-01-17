@@ -41,9 +41,9 @@
     "baseUrl": "./src",
     "paths": {
       "~/lib/*": ["./lib/*"],
-      "~/services/*": ["./services/*"]
+      "~/modules/*": ["./modules/*"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "build", "apps", "packages"]
+  "exclude": ["node_modules", "dist", "build", "apps", "packages", "src/modules/portal"]
 }

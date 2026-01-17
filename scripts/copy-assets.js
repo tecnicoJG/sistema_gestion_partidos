@@ -4,8 +4,8 @@ import { join } from 'path';
 console.log('📦 Copying assets to dist/...\n');
 
 // Copy display static files
-const displaySrc = 'src/services/display';
-const displayDest = 'dist/services/display';
+const displaySrc = 'src/modules/display';
+const displayDest = 'dist/modules/display';
 
 if (!existsSync(displayDest)) {
   mkdirSync(displayDest, { recursive: true });
@@ -15,14 +15,14 @@ cpSync(displaySrc, displayDest, { recursive: true });
 console.log('✓ Copied display files');
 
 // Copy updater (CommonJS .js file)
-const updaterSrc = 'src/services/updater/Updater.js';
-const updaterDest = 'dist/services/updater';
+const updaterSrc = 'src/modules/updater/index.js';
+const updaterDest = 'dist/modules/updater';
 
 if (!existsSync(updaterDest)) {
   mkdirSync(updaterDest, { recursive: true });
 }
 
-copyFileSync(updaterSrc, join(updaterDest, 'Updater.js'));
+copyFileSync(updaterSrc, join(updaterDest, 'index.js'));
 console.log('✓ Copied updater');
 
 // Copy default config files
@@ -35,5 +35,16 @@ if (!existsSync(defaultsDest)) {
 
 cpSync(defaultsSrc, defaultsDest, { recursive: true });
 console.log('✓ Copied default configs');
+
+// Copy shared assets
+const assetsSrc = 'src/modules/assets';
+const assetsDest = 'dist/modules/assets';
+
+if (!existsSync(assetsDest)) {
+  mkdirSync(assetsDest, { recursive: true });
+}
+
+cpSync(assetsSrc, assetsDest, { recursive: true });
+console.log('✓ Copied shared assets');
 
 console.log('\n✅ Asset copy complete!');

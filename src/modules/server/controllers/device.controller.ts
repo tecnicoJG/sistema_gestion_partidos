@@ -1,6 +1,6 @@
 import { spawn } from 'child_process';
 import { Request, Response } from 'express';
-import { DeviceService } from '../services/index.js';
+import { DeviceService } from '~/modules/device/index.js';
 
 export class DeviceController {
   static getConfig(_req: Request, res: Response) {
