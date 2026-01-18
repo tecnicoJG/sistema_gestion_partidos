@@ -5,26 +5,28 @@ import { z, ZodError } from 'zod';
  * Middleware to validate request data using Zod schemas
  */
 export function validate(schema: z.ZodObject<z.ZodRawShape> | z.ZodType) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await schema.parseAsync({
         body: req.body,
         query: req.query,
         params: req.params,
       });
-      next();
+      return next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errors = error.errors.map((e) => ({
+        const errors = error.issues.map((e) => ({
           path: e.path.join('.'),
           message: e.message,
         }));
-        return res.status(400).json({
+        res.status(400).json({
           error: 'Validation failed',
           details: errors,
         });
+        return;
       }
-      return res.status(500).json({ error: 'Internal validation error' });
+      res.status(500).json({ error: 'Internal validation error' });
+      return;
     }
   };
 }
