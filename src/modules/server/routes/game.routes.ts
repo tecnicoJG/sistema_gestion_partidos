@@ -1,13 +1,21 @@
 import { Router } from 'express';
+import {
+  createGameSchema,
+  getGameSchema,
+  getSessionCodeSchema,
+  resetGameSchema,
+  startGameSchema,
+} from '~/lib/validation/index.js';
 import { GameController } from '../controllers/index.js';
+import { validate } from '../middleware/index.js';
 
 const router = Router();
 
 // Get current game state
-router.get('/', GameController.getGameState);
+router.get('/', validate(getGameSchema), GameController.getGameState);
 
 // Create/Initialize new game
-router.post('/', GameController.createGame);
+router.post('/', validate(createGameSchema), GameController.createGame);
 
 // Update game state
 router.patch('/', GameController.updateGameState);
@@ -16,15 +24,15 @@ router.patch('/', GameController.updateGameState);
 router.post('/point/:team', GameController.addPoint);
 
 // Start match
-router.post('/start', GameController.startMatch);
+router.post('/start', validate(startGameSchema), GameController.startMatch);
 
 // Change server
 router.post('/change-server', GameController.changeServer);
 
 // Reset match
-router.post('/reset', GameController.resetMatch);
+router.post('/reset', validate(resetGameSchema), GameController.resetMatch);
 
 // Session QR Code
-router.get('/qr', GameController.getQRCode);
+router.get('/qr', validate(getSessionCodeSchema), GameController.getQRCode);
 
 export default router;

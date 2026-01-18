@@ -12,6 +12,16 @@ export class DeviceController {
     }
   }
 
+  static updateConfig(req: Request, res: Response) {
+    try {
+      const config = req.body;
+      DeviceService.updateConfig(config);
+      return res.json({ success: true });
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to update device config' });
+    }
+  }
+
   static async getAPQRCode(_req: Request, res: Response) {
     try {
       const qrBuffer = await DeviceService.generateNetworkQR();
