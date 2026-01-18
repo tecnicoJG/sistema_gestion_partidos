@@ -180,9 +180,7 @@ export function SetupWizard() {
               currentStep === 'local-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
-            {currentStep === 'local-setup' && (
-              <LocalSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-            )}
+            <LocalSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
           </div>
 
           {/* Master Setup */}
@@ -191,9 +189,7 @@ export function SetupWizard() {
               currentStep === 'master-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
-            {currentStep === 'master-setup' && (
-              <MasterSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-            )}
+            <MasterSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
           </div>
 
           {/* Complete Screen */}
