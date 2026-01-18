@@ -62,7 +62,7 @@ export function MasterSetupSlides({ onComplete, onBack }: MasterSetupSlidesProps
           {slides.map((slide, index) => (
             <div
               key={slide.type}
-              className={`absolute inset-0 transition-all duration-300 ease-in-out ${
+              className={`absolute inset-0 transition-all duration-500 ease-in-out ${
                 index === currentSlide
                   ? 'opacity-100 translate-x-0'
                   : index < currentSlide

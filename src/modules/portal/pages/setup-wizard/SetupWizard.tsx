@@ -114,10 +114,7 @@ export function SetupWizard() {
             <div className="text-3xl font-semibold text-display-text-secondary">Loading...</div>
           </div>
         </div>
-      ) : isFetching ? (
-        /* Fetching but spinner not shown yet - blank background */
-        null
-      ) : !setupData ? (
+      ) : isFetching /* Fetching but spinner not shown yet - blank background */ ? null : !setupData ? (
         /* Error state - failed to fetch configuration */
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-6">
@@ -155,9 +152,14 @@ export function SetupWizard() {
         </div>
       ) : (
         /* Setup wizard content */
-        <>
-          {currentStep === 'welcome' && (
-            <div className="flex-1 flex justify-center overflow-hidden px-4">
+        <div className="flex-1 relative overflow-hidden">
+          {/* Welcome Screen */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              currentStep === 'welcome' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div className="h-full flex justify-center px-4">
               <CustomScrollbar className="w-full max-w-4xl h-full">
                 <div className="min-h-full flex items-center py-6">
                   <div className="w-full">
@@ -170,18 +172,37 @@ export function SetupWizard() {
                 </div>
               </CustomScrollbar>
             </div>
-          )}
+          </div>
 
-          {currentStep === 'local-setup' && (
-            <LocalSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-          )}
+          {/* Local Setup */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              currentStep === 'local-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {currentStep === 'local-setup' && (
+              <LocalSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
+            )}
+          </div>
 
-          {currentStep === 'master-setup' && (
-            <MasterSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-          )}
+          {/* Master Setup */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              currentStep === 'master-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {currentStep === 'master-setup' && (
+              <MasterSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
+            )}
+          </div>
 
-          {currentStep === 'complete' && (
-            <div className="flex-1 flex justify-center overflow-hidden px-4">
+          {/* Complete Screen */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-500 ${
+              currentStep === 'complete' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div className="h-full flex justify-center px-4">
               <CustomScrollbar className="w-full max-w-4xl h-full">
                 <div className="min-h-full flex items-center py-6">
                   <div className="w-full">
@@ -190,8 +211,8 @@ export function SetupWizard() {
                 </div>
               </CustomScrollbar>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   );
