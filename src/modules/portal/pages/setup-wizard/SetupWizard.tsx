@@ -1,16 +1,19 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
 import { useEffect, useState } from 'react';
+
 import { CustomScrollbar } from '../../components/CustomScrollbar';
+
 import { LocalSetupSlides } from './LocalSetupSlides';
 import { MasterSetupSlides } from './MasterSetupSlides';
 import { SetupCompleteScreen } from './SetupCompleteScreen';
 import { SetupWelcomeScreen } from './SetupWelcomeScreen';
 
+import type { DeviceConfiguration } from '@/../../lib/types/device.types';
+
 type SetupStep = 'welcome' | 'local-setup' | 'master-setup' | 'complete';
 
 export function SetupWizard() {
   const [currentStep, setCurrentStep] = useState<SetupStep>('welcome');
-  const [setupData, setSetupData] = useState<DeviceConfiguration | null>(null);
+  const [deviceConfig, setDeviceConfig] = useState<DeviceConfiguration | null>(null);
   const [isFetching, setIsFetching] = useState(true); // Start as true since useEffect will fetch immediately
   const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
 
@@ -31,7 +34,14 @@ export function SetupWizard() {
       const response = await fetch('/api/device/config');
       if (response.ok) {
         const config: DeviceConfiguration = await response.json();
-        setSetupData(config);
+
+        // If status is not 'setup', redirect to home page
+        if (config.status !== 'setup') {
+          window.location.href = '/';
+          return;
+        }
+
+        setDeviceConfig(config);
       } else {
         console.error('Failed to fetch device configuration');
       }
@@ -64,14 +74,20 @@ export function SetupWizard() {
   };
 
   const handleLocaleChange = (locale: 'en' | 'es') => {
-    setSetupData((prev) => (prev ? { ...prev, locale } : null));
+    setDeviceConfig((prev) => (prev ? { ...prev, locale } : null));
   };
 
   const handleSetupComplete = async (data: Partial<DeviceConfiguration>) => {
-    if (!setupData) return;
+    if (!deviceConfig) return;
 
-    const finalData = { ...setupData, ...data };
-    setSetupData(finalData);
+    // Exclude deviceId and deviceFamily from updates (backend doesn't allow changing these)
+    // Set status to 'available' to mark setup as complete
+    const { deviceId, deviceFamily, ...updateData } = {
+      ...deviceConfig,
+      ...data,
+      status: 'available',
+    };
+    const finalData = updateData;
 
     // Save configuration to the server
     try {
@@ -105,18 +121,26 @@ export function SetupWizard() {
 
   return (
     <div className="h-screen bg-display-bg-secondary flex flex-col">
-      {showLoadingSpinner ? (
-        /* Loading spinner - shown after 500ms delay */
-        <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 relative overflow-hidden">
+        {/* Loading spinner - shown after 500ms delay */}
+        <div
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+            showLoadingSpinner ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           <div className="flex flex-col items-center gap-8">
             {/* Spinner - matching display module style */}
             <div className="w-16 h-16 rounded-full border-t-[0.35rem] border-r-[0.35rem] border-t-display-text-primary border-r-transparent animate-spin"></div>
             <div className="text-3xl font-semibold text-display-text-secondary">Loading...</div>
           </div>
         </div>
-      ) : isFetching /* Fetching but spinner not shown yet - blank background */ ? null : !setupData ? (
-        /* Error state - failed to fetch configuration */
-        <div className="flex-1 flex items-center justify-center">
+
+        {/* Error state - failed to fetch configuration */}
+        <div
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+            !isFetching && !deviceConfig ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           <div className="flex flex-col items-center gap-6">
             {/* Connection failure icon */}
             <div className="w-24 h-24 rounded-full bg-display-text-secondary/10 flex items-center justify-center">
@@ -150,9 +174,13 @@ export function SetupWizard() {
             </button>
           </div>
         </div>
-      ) : (
-        /* Setup wizard content */
-        <div className="flex-1 relative overflow-hidden">
+
+        {/* Setup wizard content */}
+        <div
+          className={`absolute inset-0 transition-opacity duration-300 ${
+            !isFetching && deviceConfig ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        >
           {/* Welcome Screen */}
           <div
             className={`absolute inset-0 transition-opacity duration-500 ${
@@ -163,11 +191,13 @@ export function SetupWizard() {
               <CustomScrollbar className="w-full max-w-4xl h-full">
                 <div className="min-h-full flex items-center py-6">
                   <div className="w-full">
-                    <SetupWelcomeScreen
-                      onSelectSetupType={handleSetupTypeSelect}
-                      onLocaleChange={handleLocaleChange}
-                      selectedLocale={setupData.locale}
-                    />
+                    {deviceConfig && (
+                      <SetupWelcomeScreen
+                        onSelectSetupType={handleSetupTypeSelect}
+                        onLocaleChange={handleLocaleChange}
+                        selectedLocale={deviceConfig.locale}
+                      />
+                    )}
                   </div>
                 </div>
               </CustomScrollbar>
@@ -175,22 +205,34 @@ export function SetupWizard() {
           </div>
 
           {/* Local Setup */}
-          <div
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              currentStep === 'local-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <LocalSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-          </div>
+          {deviceConfig && (
+            <>
+              <div
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  currentStep === 'local-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <LocalSetupSlides
+                  onComplete={handleSetupComplete}
+                  onBackToWelcome={handleBackToWelcome}
+                  initialConfig={deviceConfig}
+                />
+              </div>
 
-          {/* Master Setup */}
-          <div
-            className={`absolute inset-0 transition-opacity duration-500 ${
-              currentStep === 'master-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            <MasterSetupSlides onComplete={handleSetupComplete} onBack={handleBackToWelcome} />
-          </div>
+              {/* Master Setup */}
+              <div
+                className={`absolute inset-0 transition-opacity duration-500 ${
+                  currentStep === 'master-setup' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <MasterSetupSlides
+                  onComplete={handleSetupComplete}
+                  onBackToWelcome={handleBackToWelcome}
+                  initialConfig={deviceConfig}
+                />
+              </div>
+            </>
+          )}
 
           {/* Complete Screen */}
           <div
@@ -209,7 +251,7 @@ export function SetupWizard() {
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

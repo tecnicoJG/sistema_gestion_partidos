@@ -1,11 +1,15 @@
-import express from 'express';
 import { createServer } from 'http';
 import { dirname, resolve } from 'path';
-import { Server } from 'socket.io';
 import { fileURLToPath } from 'url';
-import { GameService } from '~/modules/game/index.js';
+
+import express from 'express';
+import { Server } from 'socket.io';
+
+
 import { createBroadcastMiddleware } from './middleware/index.js';
-import { deviceRoutes, gameRoutes } from './routes/index.js';
+import { deviceRoutes, gameRoutes, updaterRoutes } from './routes/index.js';
+
+import { GameService } from '~/modules/game/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -62,6 +66,7 @@ io.on('connection', (socket) => {
 // Configure API routes
 app.use('/api/game', createBroadcastMiddleware(io), gameRoutes);
 app.use('/api/device', deviceRoutes);
+app.use('/api/updater', updaterRoutes);
 
 // Health check endpoint
 app.get('/api/health', (_req, res) => {

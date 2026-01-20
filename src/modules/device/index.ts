@@ -1,9 +1,12 @@
 import { randomBytes } from 'crypto';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import ini from 'ini';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
-import QRCode from 'qrcode';
 import { fileURLToPath } from 'url';
+
+import ini from 'ini';
+import QRCode from 'qrcode';
+
+
 import { deviceConfigurationSchema } from '~/lib/schemas/index.js';
 import { DeviceConfiguration, WiFiConfig } from '~/lib/types/index.js';
 
@@ -32,7 +35,9 @@ export class DeviceService {
     const parsed = ini.parse(iniData);
 
     // Build the configuration object from INI structure
-    const config: Partial<DeviceConfiguration> = {
+    // Note: Using Record<string, any> here because the discriminated union is too complex
+    // for TypeScript to infer during construction. We validate with Zod schema below.
+    const config: Record<string, any> = {
       deviceFamily: parsed['device']?.['deviceFamily'] || '',
       deviceId: parsed['device']?.['deviceId'] || '',
       status: parsed['device']?.['status'] || 'setup',
@@ -52,7 +57,7 @@ export class DeviceService {
 
     // Parse venue if present
     if (parsed['venue']?.['name']) {
-      config.venue = {
+      config['venue'] = {
         name: parsed['venue']['name'],
         address: parsed['venue']['address'],
       };
@@ -60,7 +65,7 @@ export class DeviceService {
 
     // Parse network configuration
     if (parsed['network']?.['mode'] === 'ap') {
-      config.networkConfig = {
+      config['networkConfig'] = {
         mode: 'ap',
         ssid: parsed['network']['ssid'] || '',
         password: parsed['network']['password'],
@@ -71,7 +76,7 @@ export class DeviceService {
     } else if (parsed['network']?.['mode'] === 'client') {
       const connectionType = parsed['network']['connectionType'] || 'wifi';
 
-      config.networkConfig = {
+      config['networkConfig'] = {
         mode: 'client',
         hostname: parsed['network']['hostname'] || '',
         ipConfig:
@@ -81,7 +86,10 @@ export class DeviceService {
                 ip: parsed['network']['ip'] || '',
                 subnet: parsed['network']['subnet'] || '',
                 gateway: parsed['network']['gateway'] || '',
-                dns: [parsed['network']['dns1'] || '', parsed['network']['dns2'] || ''],
+                dns:
+                  parsed['network']['dns2'] && parsed['network']['dns2'].trim() !== ''
+                    ? [parsed['network']['dns1'] || '', parsed['network']['dns2']]
+                    : [parsed['network']['dns1'] || ''],
               }
             : { type: 'dhcp' },
         connection:
@@ -98,7 +106,7 @@ export class DeviceService {
 
     // Parse guest network if present
     if (parsed['guestNetwork']?.['ssid']) {
-      config.guestNetwork = {
+      (config as any).guestNetwork = {
         ssid: parsed['guestNetwork']['ssid'],
         password: parsed['guestNetwork']['password'],
         security: parsed['guestNetwork']['security'] || 'open',
@@ -107,20 +115,26 @@ export class DeviceService {
 
     // Parse SMTP config if present
     if (parsed['smtp']?.['host']) {
-      config.smtpConfig = {
+      config['smtpConfig'] = {
         host: parsed['smtp']['host'],
         port: parsed['smtp']['port'],
         secure: parsed['smtp']['secure'] === 'true',
-        user: parsed['smtp']['user'],
-        password: parsed['smtp']['password'],
         fromEmail: parsed['smtp']['fromEmail'],
         fromName: parsed['smtp']['fromName'],
       };
+
+      // Add auth if user is provided
+      if (parsed['smtp']['user']) {
+        config['smtpConfig'].auth = {
+          user: parsed['smtp']['user'],
+          password: parsed['smtp']['password'],
+        };
+      }
     }
 
     // Parse credentials if present
     if (parsed['credentials']?.['adminPIN']) {
-      config.credentials = {
+      config['credentials'] = {
         adminPIN: parsed['credentials']['adminPIN'],
         staffPIN: parsed['credentials']['staffPIN'],
       };
@@ -179,7 +193,7 @@ export class DeviceService {
         iniObj['network']['subnet'] = clientConfig.ipConfig.subnet;
         iniObj['network']['gateway'] = clientConfig.ipConfig.gateway;
         iniObj['network']['dns1'] = clientConfig.ipConfig.dns[0];
-        iniObj['network']['dns2'] = clientConfig.ipConfig.dns[1];
+        iniObj['network']['dns2'] = clientConfig.ipConfig.dns[1] || undefined;
       }
 
       if (clientConfig.connection.type === 'wifi') {
@@ -190,7 +204,7 @@ export class DeviceService {
     }
 
     // Add guest network if present
-    if (config.guestNetwork) {
+    if ('guestNetwork' in config && config.guestNetwork) {
       iniObj['guestNetwork'] = {
         ssid: config.guestNetwork.ssid,
         password: config.guestNetwork.password,
@@ -204,11 +218,15 @@ export class DeviceService {
         host: config.smtpConfig.host,
         port: config.smtpConfig.port,
         secure: config.smtpConfig.secure.toString(),
-        user: config.smtpConfig.user,
-        password: config.smtpConfig.password,
         fromEmail: config.smtpConfig.fromEmail,
         fromName: config.smtpConfig.fromName,
       };
+
+      // Add auth credentials if present
+      if (config.smtpConfig.auth) {
+        iniObj['smtp']['user'] = config.smtpConfig.auth.user;
+        iniObj['smtp']['password'] = config.smtpConfig.auth.password;
+      }
     }
 
     // Add credentials if present
@@ -355,7 +373,7 @@ export class DeviceService {
       };
     } else {
       // Client mode: prioritize guestNetwork, fallback to networkConfig
-      if (this.config.guestNetwork) {
+      if ('guestNetwork' in this.config && this.config.guestNetwork) {
         // Use guest network if available
         wifiConfig = this.config.guestNetwork;
       } else if (networkConfig.connection.type === 'wifi') {
@@ -404,6 +422,27 @@ export class DeviceService {
       return qrBuffer;
     } catch (error) {
       throw new Error(`Failed to generate network QR code: ${error}`);
+    }
+  }
+
+  static async factoryReset(): Promise<void> {
+    try {
+      const appDataDir = dirname(this.configPath);
+
+      // Delete .app_data directory if it exists
+      if (existsSync(appDataDir)) {
+        rmSync(appDataDir, { recursive: true, force: true });
+        console.log('Deleted .app_data directory');
+      }
+
+      // Clear in-memory config
+      this.config = null;
+
+      // Reinitialize from factory defaults
+      await this.initialize();
+      console.log('Factory reset completed successfully');
+    } catch (error) {
+      throw new Error(`Failed to perform factory reset: ${error}`);
     }
   }
 }

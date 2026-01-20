@@ -1,5 +1,6 @@
-import { GameSession } from '~/lib/types/index.js';
 import QRCode from 'qrcode';
+
+import { GameSession } from '~/lib/types/index.js';
 import { DeviceService } from '~/modules/device/index.js';
 
 export class GameService {

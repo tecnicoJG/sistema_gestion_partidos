@@ -1,17 +1,31 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { BaseSlide } from './BaseSlide';
 
 interface MasterConnectionSlideProps {
-  data: Partial<DeviceConfiguration>;
-  updateData: (data: Partial<DeviceConfiguration>) => void;
-  onNext: () => void;
-  onSkip?: () => void;
+  isActive: boolean;
+  isPast: boolean;
+  setValidation: (isValid: boolean) => void;
+  setSlideConfig: (data: undefined) => void;
 }
 
-export function MasterConnectionSlide({}: MasterConnectionSlideProps) {
+export function MasterConnectionSlide({
+  isActive,
+  isPast,
+  setValidation,
+  setSlideConfig,
+}: MasterConnectionSlideProps) {
   const [masterPIN, setMasterPIN] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState('');
+
+  // This slide is always valid (it's optional - can be skipped)
+  useEffect(() => {
+    if (isActive && setValidation && setSlideConfig) {
+      setSlideConfig(undefined);
+      setValidation(true);
+    }
+  }, [isActive, setValidation, setSlideConfig]);
 
   const handleConnect = async () => {
     if (!masterPIN) {
@@ -35,7 +49,7 @@ export function MasterConnectionSlide({}: MasterConnectionSlideProps) {
   };
 
   return (
-    <>
+    <BaseSlide isActive={isActive} isPast={isPast}>
       <h1 className="text-5xl font-black text-display-text-primary mb-4 uppercase tracking-wider">
         Master Connection
       </h1>
@@ -78,6 +92,6 @@ export function MasterConnectionSlide({}: MasterConnectionSlideProps) {
           </p>
         </div>
       </div>
-    </>
+    </BaseSlide>
   );
 }

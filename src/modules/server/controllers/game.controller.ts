@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+
 import { PadelGameSession } from '~/lib/types/index.js';
 import { GameService } from '~/modules/game/index.js';
 
@@ -55,7 +56,7 @@ export class GameController {
       return res.status(400).json({ error: 'Team must be 0 or 1' });
     }
 
-    GameService.addPoint(team as 0 | 1);
+    GameService.addPoint(team);
     return res.json(GameService.getSession());
   }
 

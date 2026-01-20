@@ -1,48 +1,86 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
+import { useEffect, useState } from 'react';
+
+import { BaseSlide } from './BaseSlide';
+
+import type { DeviceTheme } from '@/../../lib/types/device.types';
 
 interface CustomizationSlideProps {
-  data: Partial<DeviceConfiguration>;
-  updateData: (data: Partial<DeviceConfiguration>) => void;
-  onNext: () => void;
+  isActive: boolean;
+  isPast: boolean;
+  initialConfig: DeviceTheme;
+  setValidation: (isValid: boolean) => void;
+  setSlideConfig: (data: DeviceTheme) => void;
 }
 
-export function CustomizationSlide({ data, updateData }: CustomizationSlideProps) {
-  const presetColors = [
-    { name: 'Blue', value: '#1e73be' },
-    { name: 'Green', value: '#22c55e' },
-    { name: 'Red', value: '#ef4444' },
-    { name: 'Purple', value: '#a855f7' },
-    { name: 'Orange', value: '#f97316' },
-    { name: 'Pink', value: '#ec4899' },
-  ];
+export function CustomizationSlide({
+  isActive,
+  isPast,
+  initialConfig,
+  setValidation,
+  setSlideConfig,
+}: CustomizationSlideProps) {
+  const [data, setData] = useState<DeviceTheme>(initialConfig);
+  const [localColor, setLocalColor] = useState<string>(initialConfig.primaryColor || '#FFFFFF');
+
+  const checkValidity = () => {
+    if (!data) return false;
+
+    if (!data.default || data.default.trim() === '') return false;
+
+    if (data.primaryColor) {
+      const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+      if (!hexColorRegex.test(data.primaryColor)) return false;
+    }
+
+    return true;
+  };
+
+  // Debounce color updates to data state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setData((prev) => ({ ...prev, primaryColor: localColor }));
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [localColor]);
+
+  useEffect(() => {
+    if (isActive && setValidation && setSlideConfig) {
+      setSlideConfig(data);
+      setValidation(checkValidity());
+    } else {
+      setValidation(false);
+    }
+  }, [data, isActive, setSlideConfig, setValidation]);
+
+  const handleClearColor = () => {
+    setData((prev) => {
+      delete prev.primaryColor;
+      return prev;
+    });
+    setLocalColor('#FFFFFF');
+  };
 
   return (
-    <>
+    <BaseSlide isActive={isActive} isPast={isPast}>
       <h1 className="text-5xl font-black text-display-text-primary mb-4 uppercase tracking-wider">
         Customization
       </h1>
       <p className="text-2xl text-display-text-secondary mb-12 uppercase tracking-wide">
-        Personalize your controller display
+        Personalize your controller's color scheme
       </p>
 
       <div className="space-y-8">
         {/* Theme Selection */}
         <div>
           <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
-            Display Theme
+            Default Theme
           </label>
           <div className="flex gap-4">
             <button
-              onClick={() =>
-                updateData({
-                  theme: {
-                    ...data.theme!,
-                    default: 'light',
-                  },
-                })
-              }
+              onClick={() => setData((prev) => ({ ...prev, default: 'light' }))}
               className={`flex-1 px-8 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
-                data.theme?.default === 'light'
+                data?.default === 'light'
                   ? 'bg-display-accent text-gray-900'
                   : 'bg-display-bg-tertiary text-display-text-secondary'
               }`}
@@ -50,16 +88,9 @@ export function CustomizationSlide({ data, updateData }: CustomizationSlideProps
               Light
             </button>
             <button
-              onClick={() =>
-                updateData({
-                  theme: {
-                    ...data.theme!,
-                    default: 'dark',
-                  },
-                })
-              }
+              onClick={() => setData((prev) => ({ ...prev, default: 'dark' }))}
               className={`flex-1 px-8 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
-                data.theme?.default === 'dark'
+                data?.default === 'dark'
                   ? 'bg-display-accent text-gray-900'
                   : 'bg-display-bg-tertiary text-display-text-secondary'
               }`}
@@ -69,75 +100,27 @@ export function CustomizationSlide({ data, updateData }: CustomizationSlideProps
           </div>
         </div>
 
-        {/* Primary Color */}
-        <div>
-          <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
-            Primary Color (Optional)
-          </label>
-          <div className="grid grid-cols-3 gap-4">
-            {presetColors.map((color) => (
-              <button
-                key={color.value}
-                onClick={() =>
-                  updateData({
-                    theme: {
-                      ...data.theme!,
-                      primaryColor: color.value,
-                    },
-                  })
-                }
-                className={`px-6 py-4 text-lg font-bold rounded-xl uppercase tracking-wider transition-all ${
-                  data.theme?.primaryColor === color.value
-                    ? 'ring-4 ring-display-accent scale-105'
-                    : 'hover:scale-105'
-                }`}
-                style={{
-                  backgroundColor: color.value,
-                  color: '#ffffff',
-                }}
-              >
-                {color.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Custom Color Input */}
         <div>
           <label className="block text-lg font-bold text-display-text-primary mb-3 uppercase tracking-wider">
-            Or Enter Custom Color
+            Brand Color
           </label>
           <div className="flex gap-4 items-center">
             <input
               type="color"
-              value={data.theme?.primaryColor || '#1e73be'}
-              onChange={(e) =>
-                updateData({
-                  theme: {
-                    ...data.theme!,
-                    primaryColor: e.target.value,
-                  },
-                })
-              }
+              value={localColor}
+              onChange={(e) => setLocalColor(e.target.value)}
               className="h-16 w-24 rounded-xl cursor-pointer bg-display-bg-tertiary"
             />
-            <input
-              type="text"
-              value={data.theme?.primaryColor || ''}
-              onChange={(e) =>
-                updateData({
-                  theme: {
-                    ...data.theme!,
-                    primaryColor: e.target.value,
-                  },
-                })
-              }
-              placeholder="#1e73be"
-              className="flex-1 px-6 py-4 text-xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none"
-            />
+            <button
+              onClick={handleClearColor}
+              className="flex-1 px-8 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all bg-display-bg-tertiary text-display-text-secondary"
+            >
+              Clear
+            </button>
           </div>
         </div>
       </div>
-    </>
+    </BaseSlide>
   );
 }

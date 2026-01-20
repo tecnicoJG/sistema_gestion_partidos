@@ -1,9 +1,11 @@
 type Sports = 'padel';
 
+export type WiFiSecurityTypes = 'WPA2' | 'WPA3' | 'open';
+
 export interface WiFiConfig {
   ssid: string;
   password?: string;
-  security: 'WPA2' | 'WPA3' | 'open';
+  security: WiFiSecurityTypes;
 }
 
 export type NetworkConfig =
@@ -24,7 +26,7 @@ export type NetworkConfig =
             ip: string;
             subnet: string;
             gateway: string;
-            dns: [string, string];
+            dns: [string, string] | [string];
           };
       connection:
         | {
@@ -39,32 +41,52 @@ export interface SMTPConfig {
   host: string;
   port: string;
   secure: boolean;
-  user: string;
-  password: string;
   fromEmail: string;
   fromName: string;
+  auth?: {
+    user: string;
+    password: string;
+  };
 }
 
-export interface DeviceConfiguration {
-  deviceFamily: string; // Base36 2 digit code
-  deviceId: string;
-  status: 'available' | 'occupied' | 'maintenance' | 'setup' | 'warning' | 'error';
+export interface DeviceDetails {
   courtName?: string;
-  availableSports: Sports[];
   venue?: {
     name: string;
     address?: string;
   };
-  networkConfig: NetworkConfig;
-  guestNetwork?: WiFiConfig;
+}
+
+export interface DeviceTheme {
+  primaryColor?: string;
+  default: 'light' | 'dark';
+}
+
+export interface DeviceCredentials {
+  adminPIN: string;
+  staffPIN?: string;
+}
+
+type BaseDeviceConfiguration = {
+  deviceFamily: string; // Base36 2 digit code
+  deviceId: string;
+  status: 'available' | 'occupied' | 'maintenance' | 'setup' | 'warning' | 'error';
+  availableSports: Sports[];
   locale: 'es' | 'en';
   smtpConfig?: SMTPConfig;
-  theme: {
-    primaryColor?: string;
-    default: 'light' | 'dark';
-  };
-  credentials?: {
-    adminPIN: string;
-    staffPIN?: string;
-  };
-}
+  theme: DeviceTheme;
+  credentials?: DeviceCredentials;
+} & DeviceDetails;
+
+export type DeviceConfiguration =
+  | (BaseDeviceConfiguration & {
+      networkConfig: NetworkConfig & { mode: 'ap' };
+    })
+  | (BaseDeviceConfiguration & {
+      networkConfig: NetworkConfig & { mode: 'client'; connection: { type: 'wifi' } };
+      guestNetwork?: WiFiConfig; // Guest network optional with WiFi
+    })
+  | (BaseDeviceConfiguration & {
+      networkConfig: NetworkConfig & { mode: 'client'; connection: { type: 'ethernet' } };
+      guestNetwork: WiFiConfig; // Guest network required with Ethernet
+    });

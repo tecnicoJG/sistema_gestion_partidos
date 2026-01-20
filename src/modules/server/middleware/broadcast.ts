@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { Server } from 'socket.io';
+
 import { GameService } from '~/modules/game/index.js';
 
 export function createBroadcastMiddleware(io: Server) {

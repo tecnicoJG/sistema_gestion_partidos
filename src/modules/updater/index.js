@@ -1,7 +1,8 @@
-const https = require("https");
-const fs = require("fs");
-const path = require("path");
 const { execSync } = require("child_process");
+const fs = require("fs");
+const https = require("https");
+const path = require("path");
+
 const AdmZip = require("adm-zip");
 
 class Updater {
@@ -783,7 +784,7 @@ class Updater {
         // Check if hostname ends with allowed domain or is exactly an allowed domain
         const hostname = parsedUrl.hostname.toLowerCase();
         const isAllowedDomain = allowedDomains.some(domain =>
-          hostname === domain || hostname.endsWith('.' + domain)
+          hostname === domain || hostname.endsWith(`.${  domain}`)
         );
 
         // Also allow amazonaws.com for GitHub production release assets

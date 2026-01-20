@@ -1,18 +1,63 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { BaseSlide } from './BaseSlide';
+
+import type { DeviceCredentials } from '@/../../lib/types/device.types';
 
 interface CredentialsSlideProps {
-  data: Partial<DeviceConfiguration>;
-  updateData: (data: Partial<DeviceConfiguration>) => void;
-  onNext: () => void;
+  isActive: boolean;
+  isPast: boolean;
+  initialConfig?: DeviceCredentials;
+  setValidation: (isValid: boolean) => void;
+  setSlideConfig: (data: DeviceCredentials | undefined) => void;
 }
 
-export function CredentialsSlide({ data, updateData }: CredentialsSlideProps) {
+export function CredentialsSlide({
+  isActive,
+  isPast,
+  initialConfig,
+  setValidation,
+  setSlideConfig,
+}: CredentialsSlideProps) {
+  const [data, setData] = useState<DeviceCredentials | undefined>(initialConfig);
   const [showAdminPIN, setShowAdminPIN] = useState(false);
   const [showStaffPIN, setShowStaffPIN] = useState(false);
 
+  const checkValidity = () => {
+    if (!data) return true;
+
+    if (data.staffPIN && !data.adminPIN) return false;
+
+    if (data.adminPIN && data.adminPIN.length < 6) return false;
+    if (data.staffPIN && data.staffPIN.length < 6) return false;
+
+    return true;
+  };
+
+  useEffect(() => {
+    if (isActive && setValidation && setSlideConfig) {
+      setSlideConfig(data);
+      setValidation(checkValidity());
+    } else {
+      setValidation(false);
+    }
+  }, [data, isActive, setSlideConfig, setValidation]);
+
+  useEffect(() => {
+    if (data) {
+      // Check if all fields are empty
+      const isEmpty =
+        (!data.adminPIN || data.adminPIN.trim() === '') &&
+        (!data.staffPIN || data.staffPIN.trim() === '');
+
+      if (isEmpty) {
+        setData(undefined);
+      }
+    }
+  }, [data]);
+
   return (
-    <>
+    <BaseSlide isActive={isActive} isPast={isPast}>
       <h1 className="text-5xl font-black text-display-text-primary mb-4 uppercase tracking-wider">
         Security
       </h1>
@@ -24,22 +69,17 @@ export function CredentialsSlide({ data, updateData }: CredentialsSlideProps) {
         {/* Admin PIN */}
         <div>
           <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
-            Admin PIN (Required)
+            Admin PIN {data && data.staffPIN && '*'}
           </label>
           <div className="relative">
             <input
               type={showAdminPIN ? 'text' : 'password'}
-              value={data.credentials?.adminPIN || ''}
-              onChange={(e) =>
-                updateData({
-                  credentials: {
-                    ...data.credentials,
-                    adminPIN: e.target.value,
-                    staffPIN: data.credentials?.staffPIN,
-                  },
-                })
-              }
-              placeholder="4-6 digit PIN"
+              value={data?.adminPIN || ''}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setData((prev) => ({ ...(prev || {}), adminPIN: numericValue }));
+              }}
+              placeholder="6 digit PIN"
               maxLength={6}
               className="w-full px-6 py-4 text-2xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none tracking-widest"
             />
@@ -51,29 +91,25 @@ export function CredentialsSlide({ data, updateData }: CredentialsSlideProps) {
               {showAdminPIN ? 'Hide' : 'Show'}
             </button>
           </div>
-          <p className="mt-2 text-sm text-display-text-secondary uppercase tracking-wide">
-            Used for device configuration and admin access
-          </p>
         </div>
 
         {/* Staff PIN */}
         <div>
           <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
-            Staff PIN (Optional)
+            Staff PIN
           </label>
           <div className="relative">
             <input
               type={showStaffPIN ? 'text' : 'password'}
-              value={data.credentials?.staffPIN || ''}
-              onChange={(e) =>
-                updateData({
-                  credentials: {
-                    adminPIN: data.credentials?.adminPIN || '',
-                    staffPIN: e.target.value,
-                  },
-                })
-              }
-              placeholder="4-6 digit PIN"
+              value={data?.staffPIN || ''}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setData((prev) => ({
+                  adminPIN: prev?.adminPIN || '',
+                  staffPIN: numericValue,
+                }));
+              }}
+              placeholder="6 digit PIN"
               maxLength={6}
               className="w-full px-6 py-4 text-2xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none tracking-widest"
             />
@@ -85,32 +121,8 @@ export function CredentialsSlide({ data, updateData }: CredentialsSlideProps) {
               {showStaffPIN ? 'Hide' : 'Show'}
             </button>
           </div>
-          <p className="mt-2 text-sm text-display-text-secondary uppercase tracking-wide">
-            Used for basic game control operations
-          </p>
-        </div>
-
-        {/* PIN Requirements */}
-        <div className="bg-display-bg-tertiary bg-opacity-30 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-display-text-primary mb-3 uppercase tracking-wider">
-            PIN Requirements
-          </h3>
-          <ul className="space-y-2 text-display-text-secondary uppercase tracking-wide">
-            <li className="flex items-center gap-2">
-              <span className="text-display-accent">•</span>
-              <span>4 to 6 digits</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-display-accent">•</span>
-              <span>Numbers only</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-display-accent">•</span>
-              <span>Admin and staff PINs must be different</span>
-            </li>
-          </ul>
         </div>
       </div>
-    </>
+    </BaseSlide>
   );
 }

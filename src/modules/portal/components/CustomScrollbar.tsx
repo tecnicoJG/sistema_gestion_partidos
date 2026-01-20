@@ -19,9 +19,6 @@ export function CustomScrollbar({ children, className = '' }: CustomScrollbarPro
     const content = contentRef.current;
     if (!container || !content) return;
 
-    // Reset scroll position to top when children change
-    content.scrollTop = 0;
-
     const updateScrollbar = () => {
       const containerHeight = container.clientHeight;
       const contentHeight = content.scrollHeight;

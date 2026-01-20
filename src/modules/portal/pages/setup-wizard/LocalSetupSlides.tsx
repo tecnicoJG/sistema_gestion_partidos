@@ -1,72 +1,160 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
-import { useState } from 'react';
-import { CustomScrollbar } from '../../components/CustomScrollbar';
-import { CourtDetailsSlide } from './slides/CourtDetailsSlide';
+import { Children, useEffect, useMemo, useState } from 'react';
+
 import { CredentialsSlide } from './slides/CredentialsSlide';
 import { CustomizationSlide } from './slides/CustomizationSlide';
+import { DeviceDetailsSlide } from './slides/DeviceDetailsSlide';
 import { GuestNetworkSlide } from './slides/GuestNetworkSlide';
 import { NetworkConfigSlide } from './slides/NetworkConfigSlide';
 import { SmtpConfigSlide } from './slides/SmtpConfigSlide';
 
+import type { DeviceConfiguration } from '@/../../lib/types/device.types';
+
 interface LocalSetupSlidesProps {
   onComplete: (data: Partial<DeviceConfiguration>) => void;
-  onBack: () => void;
+  onBackToWelcome: () => void;
+  initialConfig: DeviceConfiguration;
 }
 
-export function LocalSetupSlides({ onComplete, onBack }: LocalSetupSlidesProps) {
+export function LocalSetupSlides({
+  onComplete,
+  onBackToWelcome,
+  initialConfig,
+}: LocalSetupSlidesProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [setupData, setSetupData] = useState<Partial<DeviceConfiguration>>({});
+  const [deviceConfig, setDeviceConfig] = useState<DeviceConfiguration>(initialConfig);
+  const [isCurrentSlideValid, setIsCurrentSlideValid] = useState(false);
+  const [currentSlideConfig, setCurrentSlideConfig] = useState<any | undefined>();
+  const [isOffline, setIsOffline] = useState(initialConfig.networkConfig.mode === 'ap');
 
-  const updateData = (data: Partial<DeviceConfiguration>) => {
-    setSetupData((prev) => ({ ...prev, ...data }));
-  };
-
-  const slides = [
-    { component: CourtDetailsSlide, canSkip: false },
-    { component: NetworkConfigSlide, canSkip: false },
-    { component: GuestNetworkSlide, canSkip: true },
-    { component: SmtpConfigSlide, canSkip: true },
-    { component: CustomizationSlide, canSkip: false },
-    { component: CredentialsSlide, canSkip: false },
-  ];
-
-  const canSkip = slides[currentSlide]?.canSkip || false;
+  useEffect(() => {
+    setIsOffline(deviceConfig.networkConfig.mode === 'ap');
+  }, [deviceConfig]);
 
   const goNext = () => {
-    if (currentSlide < slides.length - 1) {
+    let skipOnlineSlides = false;
+    if (currentSlide === 1 && currentSlideConfig) {
+      skipOnlineSlides = currentSlideConfig.mode === 'ap';
+    }
+
+    setDeviceConfig((prev) => {
+      if (currentSlide === 0) {
+        return { ...prev, ...currentSlideConfig };
+      } else if (currentSlide === 1) {
+        // When updating network config, clear guestNetwork and smtpConfig if switching to AP mode
+        if (skipOnlineSlides) {
+          const updatedConfig = {
+            ...prev,
+            networkConfig: currentSlideConfig,
+          };
+          if ('guestNetwork' in updatedConfig) delete updatedConfig.guestNetwork;
+          if ('smtpConfig' in updatedConfig) delete updatedConfig.smtpConfig;
+          return updatedConfig;
+        }
+        return { ...prev, networkConfig: currentSlideConfig };
+      } else if (currentSlide === 2) {
+        return { ...prev, guestNetwork: currentSlideConfig };
+      } else if (currentSlide === 3) {
+        return { ...prev, smtpConfig: currentSlideConfig };
+      } else {
+        return { ...prev, ...currentSlideConfig };
+      }
+    });
+
+    if (skipOnlineSlides) {
+      setCurrentSlide(currentSlide + 3);
+    } else if (currentSlide < totalSlides - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
-      onComplete(setupData);
+      onComplete(deviceConfig);
     }
   };
 
   const goBack = () => {
-    if (currentSlide > 0) {
+    if (currentSlide === 4 && isOffline) {
+      setCurrentSlide(currentSlide - 3);
+    } else if (currentSlide > 0) {
       setCurrentSlide(currentSlide - 1);
     } else {
-      onBack();
+      onBackToWelcome();
     }
   };
 
-  const skip = () => {
-    if (canSkip) {
-      goNext();
-    }
-  };
+  const slideComponents = useMemo(
+    () => (
+      <>
+        <DeviceDetailsSlide
+          isActive={currentSlide === 0}
+          isPast={currentSlide > 0}
+          initialConfig={{ courtName: deviceConfig.courtName, venue: deviceConfig.venue }}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+
+        <NetworkConfigSlide
+          isActive={currentSlide === 1}
+          isPast={currentSlide > 1}
+          initialConfig={deviceConfig.networkConfig}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+
+        <GuestNetworkSlide
+          isActive={currentSlide === 2}
+          isPast={currentSlide > 2}
+          required={
+            deviceConfig.networkConfig.mode === 'client' &&
+            deviceConfig.networkConfig.connection.type === 'ethernet'
+          }
+          initialConfig={'guestNetwork' in deviceConfig ? deviceConfig.guestNetwork : undefined}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+
+        <SmtpConfigSlide
+          isActive={currentSlide === 3}
+          isPast={currentSlide > 3}
+          initialConfig={deviceConfig.smtpConfig}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+
+        <CustomizationSlide
+          isActive={currentSlide === 4}
+          isPast={currentSlide > 4}
+          initialConfig={deviceConfig.theme}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+
+        <CredentialsSlide
+          isActive={currentSlide === 5}
+          isPast={currentSlide > 5}
+          initialConfig={deviceConfig.credentials}
+          setValidation={setIsCurrentSlideValid}
+          setSlideConfig={setCurrentSlideConfig}
+        />
+      </>
+    ),
+    [currentSlide, deviceConfig, setCurrentSlideConfig, setIsCurrentSlideValid]
+  );
+
+  const totalSlides = Children.count(slideComponents.props.children);
 
   return (
     <div className="h-screen bg-display-bg-secondary flex flex-col">
       {/* Navigation Page Indicators */}
-      <div className="flex justify-center items-center gap-2 border-b border-display-bg-primary bg-display-bg-secondary p-6">
-        {slides.map((_, index) => (
+      <div className="flex justify-center items-center border-b border-display-bg-primary bg-display-bg-secondary p-6">
+        {Array.from({ length: totalSlides }).map((_, index) => (
           <div
             key={index}
-            className={`h-3 rounded-full transition-all ${
-              currentSlide < index
-                ? 'w-3 bg-display-text-secondary opacity-50'
-                : currentSlide > index
-                  ? 'w-3 bg-display-accent'
-                  : 'w-8 bg-display-accent'
+            className={`h-3 rounded-full transition-all duration-300 ${
+              isOffline && (index === 2 || index === 3)
+                ? 'w-0 opacity-0 scale-0 mx-0'
+                : currentSlide < index
+                  ? 'w-3 bg-display-text-secondary opacity-50 mx-1'
+                  : currentSlide > index
+                    ? 'w-3 bg-display-accent mx-1'
+                    : 'w-8 bg-display-accent mx-1'
             }`}
           />
         ))}
@@ -74,28 +162,7 @@ export function LocalSetupSlides({ onComplete, onBack }: LocalSetupSlidesProps) 
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden px-4">
-        <div className="h-full max-w-4xl mx-auto relative">
-          {slides.map((slide, index) => (
-            <div
-              key={index}
-              className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                index === currentSlide
-                  ? 'opacity-100 translate-x-0'
-                  : index < currentSlide
-                    ? 'opacity-0 -translate-x-full pointer-events-none'
-                    : 'opacity-0 translate-x-full pointer-events-none'
-              }`}
-            >
-              <CustomScrollbar className="h-full">
-                <div className="min-h-full flex items-center py-6">
-                  <div className="w-full">
-                    <slide.component data={setupData} updateData={updateData} onNext={goNext} />
-                  </div>
-                </div>
-              </CustomScrollbar>
-            </div>
-          ))}
-        </div>
+        <div className="h-full max-w-4xl mx-auto relative">{slideComponents}</div>
       </div>
 
       {/* Navigation Buttons */}
@@ -118,25 +185,20 @@ export function LocalSetupSlides({ onComplete, onBack }: LocalSetupSlidesProps) 
           </div>
 
           <div className="flex gap-4">
-            {canSkip && currentSlide < slides.length - 1 && (
-              <button
-                onClick={skip}
-                className="flex items-center justify-center gap-2 py-3 px-4 hover:bg-gray-100/20 text-display-text-primary/40 hover:text-display-text-primary text-xl font-bold rounded-lg transition-all duration-150 uppercase tracking-wider"
-              >
-                Skip
-                <svg className="h-6 w-6" viewBox="0 0 16 16">
-                  <path
-                    fill="currentcolor"
-                    d="M3.70711,2.29289 L8.70711,7.29289 C9.09763,7.68342 9.09763,8.31658 8.70711,8.70711 L3.70711,13.7071 C3.31658,14.0976 2.68342,14.0976 2.29289,13.7071 C1.90237,13.3166 1.90237,12.6834 2.29289,12.2929 L6.58579,8 L2.29289,3.70711 C1.90237,3.31658 1.90237,2.68342 2.29289,2.29289 C2.68342,1.90237 3.31658,1.90237 3.70711,2.29289 Z M8.70711,2.29289 L13.7071,7.29289 C14.0976,7.68342 14.0976,8.31658 13.7071,8.70711 L8.70711,13.7071 C8.31658,14.0976 7.68342,14.0976 7.29289,13.7071 C6.90237,13.3166 6.90237,12.6834 7.29289,12.2929 L11.5858,8 L7.29289,3.70711 C6.90237,3.31658 6.90237,2.68342 7.29289,2.29289 C7.68342,1.90237 8.31658,1.90237 8.70711,2.29289 Z"
-                  />
-                </svg>
-              </button>
-            )}
             <button
               onClick={goNext}
-              className="flex items-center justify-center gap-2 py-3 px-4 hover:bg-gray-100/20 text-display-text-primary text-xl font-bold rounded-lg transition-all duration-150 uppercase tracking-wider"
+              disabled={!isCurrentSlideValid}
+              className={`flex items-center justify-center gap-2 py-3 px-4 text-xl font-bold rounded-lg transition-all duration-150 uppercase tracking-wider ${
+                isCurrentSlideValid
+                  ? 'hover:bg-gray-100/20 text-display-text-primary'
+                  : 'text-display-text-secondary opacity-50 cursor-not-allowed'
+              }`}
             >
-              {currentSlide === slides.length - 1 ? 'Complete' : 'Next'}
+              {currentSlide === totalSlides - 1
+                ? 'Complete'
+                : !currentSlideConfig && isCurrentSlideValid
+                  ? 'Skip'
+                  : 'Next'}
               <svg className="h-6 w-6" viewBox="0 0 16 16">
                 <path
                   fill="currentcolor"

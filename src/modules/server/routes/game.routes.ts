@@ -1,4 +1,8 @@
 import { Router } from 'express';
+
+import { GameController } from '../controllers/index.js';
+import { validate } from '../middleware/index.js';
+
 import {
   createGameSchema,
   getGameSchema,
@@ -6,8 +10,6 @@ import {
   resetGameSchema,
   startGameSchema,
 } from '~/lib/validation/index.js';
-import { GameController } from '../controllers/index.js';
-import { validate } from '../middleware/index.js';
 
 const router = Router();
 

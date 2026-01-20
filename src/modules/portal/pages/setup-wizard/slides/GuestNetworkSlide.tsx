@@ -1,113 +1,165 @@
-import type { DeviceConfiguration } from '@/../../lib/types/device.types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { BaseSlide } from './BaseSlide';
+
+import type { WiFiConfig } from '@/../../lib/types/device.types';
 
 interface GuestNetworkSlideProps {
-  data: Partial<DeviceConfiguration>;
-  updateData: (data: Partial<DeviceConfiguration>) => void;
-  onNext: () => void;
-  onSkip?: () => void;
+  isActive: boolean;
+  isPast: boolean;
+  initialConfig?: WiFiConfig;
+  required: boolean;
+  setValidation: (isValid: boolean) => void;
+  setSlideConfig: (data: WiFiConfig | undefined) => void;
 }
 
-export function GuestNetworkSlide({ data, updateData }: GuestNetworkSlideProps) {
-  const [enabled, setEnabled] = useState(!!data.guestNetwork);
+export const GuestNetworkSlide = ({
+  isActive,
+  isPast,
+  initialConfig,
+  required,
+  setValidation,
+  setSlideConfig,
+}: GuestNetworkSlideProps) => {
+  const [data, setData] = useState<WiFiConfig | undefined>(initialConfig);
 
-  const handleToggle = (enable: boolean) => {
-    setEnabled(enable);
-    if (!enable) {
-      updateData({ guestNetwork: undefined });
-    } else {
-      updateData({
-        guestNetwork: {
-          ssid: '',
-          password: '',
-          security: 'WPA2',
-        },
-      });
+  const checkValidity = () => {
+    if (!data) return !required;
+
+    if (!data.ssid || data.ssid.trim() === '') return false;
+
+    // If security is not open, password must be at least 8 characters
+    if (data.security !== 'open') {
+      if (!data.password || data.password.length < 8) return false;
     }
+
+    return true;
+  };
+
+  useEffect(() => {
+    if (isActive && setValidation && setSlideConfig) {
+      setSlideConfig(data);
+      setValidation(checkValidity());
+    } else {
+      setValidation(false);
+    }
+  }, [data, isActive, required, setSlideConfig, setValidation]);
+
+  useEffect(() => {
+    if (data) {
+      // Check if all fields are empty
+      const isEmpty =
+        (!data.ssid || data.ssid.trim() === '') && (!data.password || data.password.trim() === '');
+
+      if (isEmpty) {
+        setData(undefined);
+      }
+    }
+  }, [data]);
+
+  const handleSSIDChange = (value: string) => {
+    setData((prev) => ({
+      ssid: value,
+      password: prev?.password,
+      security: prev?.security || 'WPA2',
+    }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setData((prev) => ({
+      ssid: prev?.ssid || '',
+      password: value,
+      security: prev?.security || 'WPA2',
+    }));
+  };
+
+  const handleSecurityChange = (value: 'WPA2' | 'WPA3' | 'open') => {
+    setData((prev) => ({
+      ssid: prev?.ssid || '',
+      password: value !== 'open' ? prev?.password || '' : '',
+      security: value,
+    }));
   };
 
   return (
-    <>
+    <BaseSlide isActive={isActive} isPast={isPast}>
       <h1 className="text-5xl font-black text-display-text-primary mb-4 uppercase tracking-wider">
-        Guest Network
+        Public Network
       </h1>
       <p className="text-2xl text-display-text-secondary mb-12 uppercase tracking-wide">
-        WiFi network for venue guests
+        WiFi network for players
       </p>
 
       <div className="space-y-8">
         <div>
           <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
-            Enable Guest Network
+            Network Name (SSID) {(data || required) && '*'}
           </label>
-          <div className="flex gap-4">
+          <input
+            type="text"
+            value={data?.ssid || ''}
+            onChange={(e) => handleSSIDChange(e.target.value)}
+            placeholder="Guest WiFi"
+            className="w-full px-6 py-4 text-2xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
+            Security Type
+          </label>
+          <div className="grid grid-cols-3 gap-4">
             <button
-              onClick={() => handleToggle(true)}
-              className={`flex-1 px-8 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
-                enabled
+              onClick={() => handleSecurityChange('WPA2')}
+              className={`px-6 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
+                !data || data?.security === 'WPA2'
                   ? 'bg-display-accent text-gray-900'
                   : 'bg-display-bg-tertiary text-display-text-secondary'
               }`}
             >
-              Yes
+              WPA2
             </button>
             <button
-              onClick={() => handleToggle(false)}
-              className={`flex-1 px-8 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
-                !enabled
+              onClick={() => handleSecurityChange('WPA3')}
+              className={`px-6 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
+                data?.security === 'WPA3'
                   ? 'bg-display-accent text-gray-900'
                   : 'bg-display-bg-tertiary text-display-text-secondary'
               }`}
             >
-              No
+              WPA3
+            </button>
+            <button
+              onClick={() => handleSecurityChange('open')}
+              className={`px-6 py-4 text-xl font-bold rounded-xl uppercase tracking-wider transition-all ${
+                data?.security === 'open'
+                  ? 'bg-display-accent text-gray-900'
+                  : 'bg-display-bg-tertiary text-display-text-secondary'
+              }`}
+            >
+              Open
             </button>
           </div>
         </div>
 
-        {enabled && (
-          <>
-            <div>
-              <label className="block text-lg font-bold text-display-text-primary mb-3 uppercase tracking-wider">
-                Network Name (SSID)
-              </label>
-              <input
-                type="text"
-                value={data.guestNetwork?.ssid || ''}
-                onChange={(e) =>
-                  updateData({
-                    guestNetwork: {
-                      ...data.guestNetwork!,
-                      ssid: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Guest WiFi"
-                className="w-full px-6 py-4 text-xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none placeholder:normal-case"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-bold text-display-text-primary mb-3 uppercase tracking-wider">
-                Password (Optional)
-              </label>
-              <input
-                type="password"
-                value={data.guestNetwork?.password || ''}
-                onChange={(e) =>
-                  updateData({
-                    guestNetwork: {
-                      ...data.guestNetwork!,
-                      password: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Leave empty for open network"
-                className="w-full px-6 py-4 text-xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none placeholder:normal-case"
-              />
-            </div>
-          </>
+        {data?.security !== 'open' && (
+          <div>
+            <label className="block text-xl font-bold text-display-text-primary mb-4 uppercase tracking-wider">
+              Password {(data || required) && '*'}
+            </label>
+            <input
+              type="password"
+              value={data?.password || ''}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+              placeholder="Minimum 8 characters"
+              className="w-full px-6 py-4 text-2xl bg-display-bg-tertiary text-display-text-primary rounded-xl border-2 border-transparent focus:border-display-accent outline-none tracking-wider placeholder:normal-case placeholder:tracking-normal"
+            />
+            {data?.password && data.password.length < 8 && (
+              <p className="mt-2 text-sm text-red-500">Password must be at least 8 characters</p>
+            )}
+          </div>
         )}
       </div>
-    </>
+    </BaseSlide>
   );
-}
+};

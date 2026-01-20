@@ -1,5 +1,7 @@
 import { spawn } from 'child_process';
+
 import { Request, Response } from 'express';
+
 import { DeviceService } from '~/modules/device/index.js';
 
 export class DeviceController {
@@ -59,5 +61,37 @@ export class DeviceController {
       // Exit current process
       process.exit(0);
     }, 500);
+  }
+
+  static async reset(_req: Request, res: Response) {
+    try {
+      await DeviceService.factoryReset();
+
+      res.json({ message: 'Factory reset completed, server restarting...' });
+
+      return setTimeout(() => {
+        // Determine the correct command to restart
+        const args = process.argv.slice(1);
+        const command = process.execPath;
+
+        console.log('Restarting after factory reset with:', command, args);
+
+        // Spawn a new instance of the server
+        const child = spawn(command, args, {
+          detached: true,
+          stdio: 'ignore',
+          cwd: process.cwd(),
+          env: process.env,
+        });
+
+        // Detach the child process so it continues after parent exits
+        child.unref();
+
+        // Exit current process
+        process.exit(0);
+      }, 500);
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to perform factory reset' });
+    }
   }
 }
