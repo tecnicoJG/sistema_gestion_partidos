@@ -1,6 +1,6 @@
 {
   "name": "controller",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "minimumVersionRequired": "0.0.1",
   "private": true,
   "type": "module",
